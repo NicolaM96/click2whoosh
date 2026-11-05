@@ -312,8 +312,9 @@ class ClickBridge:
     def on_firmware(self, side: str, version: str) -> None:
         if version != TESTED_FIRMWARE and side not in self.warned_firmware:
             self.warned_firmware.add(side)
-            notify("Firmware del Click cambiato",
-                   f"Click {side}: {version} invece di {TESTED_FIRMWARE}. Se qualcosa non va, è per questo.")
+            notify("Firmware del Click diverso dal provato",
+                   f"Click {side}: firmware {version}, provato solo con {TESTED_FIRMWARE}. "
+                   "Se qualcosa non funziona, segnalalo su GitHub allegando il registro (menu → Apri registro).")
 
     def search_often(self) -> bool:
         """Ricerca continua con MyWhoosh aperto; altrimenti leggera (il Mac consuma meno)."""

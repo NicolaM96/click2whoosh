@@ -159,6 +159,7 @@ class ClickSide:
     last_message: float = 0.0
     device: BLEDevice | None = None
     just_reset: bool = False
+    firmware: str = ""  # letto al collegamento, per il registro
     client: BleakClient | None = None  # la connessione in corso, per power_off()
     # Dopo power_off() il Click riavviato si fa vedere per qualche secondo: non lo si cerca
     # finché non si è addormentato davvero, altrimenti lo si ricollegherebbe per niente.
@@ -276,23 +277,34 @@ class ClickSide:
         except Exception as e:
             log.info("[%s] firmware non leggibile: %s", self.name, e)
             return
+        self.firmware = version
         log.info("[%s] firmware %s", self.name, version)
         self.events.on_firmware(self.name, version)
 
     async def wake_sequence(self, client: BleakClient, wake, control) -> None:
         """La sequenza che tiene acceso il Click per altri ~15 minuti (944 s)."""
-        for characteristic in (wake, control):
-            # BikeControl riattiva le notifiche a ogni ciclo; bleak non lo permette se sono
-            # già attive, quindi si chiede direttamente a CoreBluetooth.
-            delegate = getattr(getattr(client, "_backend", None), "_delegate", None)
-            if delegate is not None:
-                delegate.peripheral.setNotifyValue_forCharacteristic_(True, characteristic.obj)
-        await asyncio.sleep(0.1)
-        await client.write_gatt_char(control, b"\x01", response=False)
-        await asyncio.sleep(0.06)
-        await client.write_gatt_char(wake, WAKE_MESSAGE, response=False)
-        await asyncio.sleep(0.06)
-        await client.write_gatt_char(control, b"\x03", response=False)
+        step = "riattivo le notifiche"
+        try:
+            for characteristic in (wake, control):
+                # BikeControl riattiva le notifiche a ogni ciclo; bleak non lo permette se sono
+                # già attive, quindi si chiede direttamente a CoreBluetooth.
+                delegate = getattr(getattr(client, "_backend", None), "_delegate", None)
+                if delegate is not None:
+                    delegate.peripheral.setNotifyValue_forCharacteristic_(True, characteristic.obj)
+            await asyncio.sleep(0.1)
+            step = "scrivo 01"
+            await client.write_gatt_char(control, b"\x01", response=False)
+            await asyncio.sleep(0.06)
+            step = "scrivo il messaggio di wake"
+            await client.write_gatt_char(wake, WAKE_MESSAGE, response=False)
+            await asyncio.sleep(0.06)
+            step = "scrivo 03"
+            await client.write_gatt_char(control, b"\x03", response=False)
+        except Exception as e:
+            # Il firmware (se noto) aiuta a capire se una versione nuova ha cambiato la sequenza.
+            log.warning("[%s] sequenza wake fallita al passo «%s» (firmware %s): %s",
+                        self.name, step, self.firmware or "?", e)
+            raise
         log.info("[%s] tenuto sveglio senza riavvio", self.name)
         await self.read_battery(client)
 

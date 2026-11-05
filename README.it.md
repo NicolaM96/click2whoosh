@@ -41,7 +41,7 @@ Col solo Click destro: **+** marcia su, **B** marcia giù, **Z/A** sterzo, **Y**
 4. In MyWhoosh, una volta sola: schermata **Connessioni** → icona **OpenBikeControl** in alto a destra → **Click2Whoosh** → **Sì**.
 
 Richiede macOS 11 o successivo (provata su macOS 27, Click v2 firmware 1.1.0, MyWhoosh 5.7.0).
-**Non aggiornare il firmware del Click**: un aggiornamento può cambiare il protocollo (l'app ti avvisa se succede).
+**Il firmware 1.2.0 non è ancora verificato.** Le sue note non citano cambi di protocollo, ma Zwift non permette di tornare alla 1.1.0, quindi non aggiorno i miei Click. Se hai già la 1.2.0, [dimmi se funziona](../../issues/new?template=firmware.md): con un firmware diverso dalla 1.1.0 l'app mostra un avviso, e il registro (menu → Apri registro) dice dove si rompe.
 
 ## Dal codice sorgente (Python 3.11+)
 ```bash
