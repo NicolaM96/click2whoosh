@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="it">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Impostazioni</title>
-<!-- comune -->
+<title>{{ _("Settings") }}</title>
+{% include "common.html" %}
 <style>
 body { padding: 20px 22px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
@@ -48,33 +48,43 @@ summary { cursor: pointer; color: var(--muted); font-weight: 500; }
   </div>
 
   <div class="card">
-    <h2 id="title">Tasto +</h2>
-    <p class="sub">Scegli il tasto sul disegno, oppure premilo sul Click: finché questa finestra è in primo piano, i tasti selezionano soltanto.</p>
-    <div class="row"><label for="single">Clic</label><select id="single"></select></div>
-    <div class="row"><label for="double">Doppio clic</label><select id="double"></select></div>
-    <div class="row"><label for="long">Tenuto premuto</label><select id="long"></select></div>
+    <h2 id="title"></h2>
+    <p class="sub">{{ _("Choose a button on the drawing, or press it on the Click: while this window is in front, the buttons only select.") }}</p>
+    <div class="row"><label for="single">{{ _("Single click") }}</label><select id="single"></select></div>
+    <div class="row"><label for="double">{{ _("Double click") }}</label><select id="double"></select></div>
+    <div class="row"><label for="long">{{ _("Press and hold") }}</label><select id="long"></select></div>
     <div class="hint" id="hint"></div>
-    <div class="footer"><span></span><span class="saved" id="saved">Salvato</span></div>
+    <div class="footer"><span></span><span class="saved" id="saved">{{ _("Saved") }}</span></div>
   </div>
 </div>
 
 <div class="card advanced">
   <details>
-    <summary>Avanzate</summary>
+    <summary>{{ _("Advanced") }}</summary>
     <div class="adv">
-      <span>Pressione lunga dopo (ms)</span><input type="number" min="200" max="3000" step="50" data-key="long_press_ms">
-      <span>Tempo per il doppio clic (ms)</span><input type="number" min="100" max="1000" step="25" data-key="double_press_ms">
-      <span>Avviso batteria sotto (%)</span><input type="number" min="0" max="100" step="5" data-key="battery_warning">
-      <span>Suono a ogni cambio marcia</span><input type="checkbox" data-key="shift_sound">
-      <span>Usa anche il Click sinistro</span><input type="checkbox" data-key="use_left_side">
+      <span>{{ _("Long press after (ms)") }}</span><input type="number" min="200" max="3000" step="50" data-key="long_press_ms">
+      <span>{{ _("Double-click window (ms)") }}</span><input type="number" min="100" max="1000" step="25" data-key="double_press_ms">
+      <span>{{ _("Battery warning below (%)") }}</span><input type="number" min="0" max="100" step="5" data-key="battery_warning">
+      <span>{{ _("Sound on every shift") }}</span><input type="checkbox" data-key="shift_sound">
+      <span>{{ _("Also use the left Click") }}</span><input type="checkbox" data-key="use_left_side">
       <span></span><span></span>
-      <span class="note">Se non hai cambiato i tasti, passano da soli a quelli adatti (con i due Click: marce su + e −, sterzo sulle frecce). Il collegamento del sinistro vale dal prossimo avvio.</span>
-      <div class="actions"><button id="open-file">Apri file di configurazione</button></div>
+      <span class="note">{{ _("If you haven't changed the buttons, they switch by themselves to the suitable ones (with both Clicks: gears on + and −, steering on the arrows). Connecting the left Click takes effect from the next launch.") }}</span>
+      <div class="actions"><button id="open-file">{{ _("Open configuration file") }}</button></div>
     </div>
   </details>
 </div>
 
 <script>
+const T = {
+  nothing: {{ _("Nothing")|tojson }},
+  repeatClick: {{ _("Repeat the click")|tojson }},
+  button: {{ _("Button {label}")|tojson }},
+  hintHeld: {{ _("Active while held: no double click or long press.")|tojson }},
+  hintDouble: {{ _("With double click, the single click fires after a short delay.")|tojson }},
+  hintLong: {{ _("With long press, the click fires when you release.")|tojson }},
+  chip: {{ _("{click} {status}")|tojson }},
+};
+
 document.getElementById("pucks").innerHTML = ["left", "right"].map(side =>
   `<div id="${side}-puck">${puck(side, 170)}<div class="puck-label">${SIDE_NAMES[side]}</div></div>`).join("");
 
@@ -82,7 +92,7 @@ let state = null;
 let selected = "plus";
 
 function optionsHtml(current, { allowHeld, extra }) {
-  let html = `<option value="none">Niente</option>`;
+  let html = `<option value="none">${T.nothing}</option>`;
   for (const [value, label] of extra || []) html += `<option value="${value}">${label}</option>`;
   const groups = {};
   for (const a of state.actions) {
@@ -102,7 +112,7 @@ function optionsHtml(current, { allowHeld, extra }) {
 
 function renderButton() {
   const b = state.buttons[selected];
-  document.getElementById("title").textContent = `Tasto ${state.labels[selected]}`;
+  document.getElementById("title").textContent = fmt(T.button, { label: state.labels[selected] });
   const single = document.getElementById("single");
   const double = document.getElementById("double");
   const long = document.getElementById("long");
@@ -111,14 +121,14 @@ function renderButton() {
 
   single.innerHTML = optionsHtml(b.single, { allowHeld: true });
   double.innerHTML = optionsHtml(b.double, { allowHeld: false });
-  long.innerHTML = optionsHtml(b.long, { allowHeld: false, extra: canRepeat ? [["repeat", "Ripeti il clic"]] : [] });
+  long.innerHTML = optionsHtml(b.long, { allowHeld: false, extra: canRepeat ? [["repeat", T.repeatClick]] : [] });
   single.value = b.single; double.value = b.double; long.value = b.long;
   double.disabled = long.disabled = held;
 
   let hint = "";
-  if (held) hint = "Attivo finché tieni premuto: niente doppio clic né pressione lunga.";
-  else if (b.double !== "none") hint = "Col doppio clic, il clic singolo parte con un attimo di ritardo.";
-  else if (b.long !== "none" && b.long !== "repeat") hint = "Con la pressione lunga, il clic parte quando rilasci.";
+  if (held) hint = T.hintHeld;
+  else if (b.double !== "none") hint = T.hintDouble;
+  else if (b.long !== "none" && b.long !== "repeat") hint = T.hintLong;
   const hintEl = document.getElementById("hint");
   hintEl.textContent = hint;
   hintEl.title = hint;
@@ -127,11 +137,12 @@ function renderButton() {
 }
 
 function renderStatus() {
-  const s = state.status;  // lo stato dei Click arriva già a parole
-  const clicks = [...(s.click_left != null ? [["sinistro", s.click_left]] : []), ["destro", s.click]];
+  const s = state.status;  // lo stato dei Click arriva come codice (vedi STATUS_TEXT)
+  const clicks = [...(s.click_left != null ? [["left", s.click_left]] : []), ["right", s.click]];
   document.getElementById("chips").innerHTML = clicks.map(([side, st]) => {
     const battery = s.batteries[side] != null ? batteryHtml(s.batteries[side]) : "";
-    return `<span class="chip ${st === "collegato" ? "ok" : "off"}">Click ${side} ${st}${battery}</span>`;
+    const text = fmt(T.chip, { click: CLICK_NAMES[side], status: STATUS_TEXT[st] ?? st });
+    return `<span class="chip ${st === "connected" ? "ok" : "off"}">${text}${battery}</span>`;
   }).join("");
 }
 

@@ -1,47 +1,47 @@
-# Configurazione di Click2Whoosh. Più comodo dal menu: Impostazioni… (le modifiche fatte lì si applicano subito).
+# Click2Whoosh configuration. Easier from the menu: Settings… (changes made there apply immediately).
 #
-# Azioni possibili:
-#   "obc:shift_up"     comando mandato a MyWhoosh via rete (OpenBikeControl): shift_up, shift_down,
-#                      steer_left, steer_right. Altri comandi del protocollo MyWhoosh li ignora.
-#                      Se MyWhoosh non è collegato via rete, marce e sterzo usano la tastiera.
-#   "obc:steer_left+left"  più comandi nello stesso messaggio
-#   "key:k"            preme e rilascia un tasto (solo con MyWhoosh in primo piano)
-#   "hold:a"           tiene premuto il tasto finché tieni premuto il pulsante
-#   "media:playpause"  anche: next, previous, volup, voldown
-#   "screenshot"       screenshot del Mac sulla Scrivania
-#   "none"             niente
+# Possible actions:
+#   "obc:shift_up"     command sent to MyWhoosh over the network (OpenBikeControl): shift_up, shift_down,
+#                      steer_left, steer_right. MyWhoosh ignores the protocol's other commands.
+#                      If MyWhoosh is not connected over the network, gears and steering use the keyboard.
+#   "obc:steer_left+left"  several commands in the same message
+#   "key:k"            presses and releases a key (only with MyWhoosh in front)
+#   "hold:a"           holds the key down for as long as you hold the button
+#   "media:playpause"  also: next, previous, volup, voldown
+#   "screenshot"       Mac screenshot, saved on the Desktop
+#   "none"             nothing
 #
-# Tasti di MyWhoosh: K marcia su, I marcia giù, A/D sterzo, U interfaccia minimale, 1-7 emote.
+# MyWhoosh keys: K shift up, I shift down, A/D steer, U minimal interface, 1-7 emotes.
 
 [general]
-long_press_ms = 600          # oltre questa durata la pressione è "lunga"
-double_press_ms = 300        # entro questo tempo due clic sono un "doppio clic"
-battery_warning = 20         # avviso quando la batteria scende sotto questa percentuale
-shift_sound = true           # suono a ogni cambio marcia: "Tink" su, "Pop" giù (il Click v2 non vibra)
-use_left_side = true         # false per usare solo il Click destro
-repeat_buttons = ["plus", "minus", "nav_up", "nav_down"]  # tenendoli premuti l'azione si ripete
+long_press_ms = 600          # a press longer than this counts as a "long press"
+double_press_ms = 300        # two clicks within this time are a "double click"
+battery_warning = 20         # warn when the battery drops below this percentage
+shift_sound = true           # sound on every shift: "Tink" up, "Pop" down (the Click v2 does not vibrate)
+use_left_side = true         # false to use the right Click only
+repeat_buttons = ["plus", "minus", "nav_up", "nav_down"]  # holding them repeats the action
 
-# Clic singolo. Click destro: plus, a, b, y, z. Click sinistro: minus, nav_up, nav_down, nav_left, nav_right.
-# Con use_left_side = false i default sono: plus marcia su, b marcia giù, z/a sterzo, y musica.
-# Cambiando l'opzione dalle Impostazioni i tasti passano da soli all'altra serie, se non li hai cambiati.
+# Single click. Right Click: plus, a, b, y, z. Left Click: minus, nav_up, nav_down, nav_left, nav_right.
+# With use_left_side = false the defaults are: plus shift up, b shift down, z/a steer, y music.
+# When you change the option in Settings, the buttons switch to the other set by themselves, if you haven't changed them.
 [buttons]
-plus = "obc:shift_up"        # marcia su
-minus = "obc:shift_down"     # marcia giù
-nav_left = "obc:steer_left"  # sterzo a sinistra (finché tieni premuto)
-nav_right = "obc:steer_right"  # sterzo a destra
-nav_up = "media:volup"       # volume su
-nav_down = "media:voldown"   # volume giù
-y = "media:playpause"        # play/pausa musica
-z = "key:u"                  # interfaccia minimale di MyWhoosh
-a = "key:2"                  # emote 2 di MyWhoosh (saluto)
-b = "screenshot"             # screenshot del Mac sulla Scrivania
+plus = "obc:shift_up"        # shift up
+minus = "obc:shift_down"     # shift down
+nav_left = "obc:steer_left"  # steer left (while held)
+nav_right = "obc:steer_right"  # steer right
+nav_up = "media:volup"       # volume up
+nav_down = "media:voldown"   # volume down
+y = "media:playpause"        # play/pause music
+z = "key:u"                  # MyWhoosh minimal interface
+a = "key:2"                  # MyWhoosh emote 2 (wave)
+b = "screenshot"             # Mac screenshot, saved on the Desktop
 
-# Pressione lunga (opzionale): l'azione normale parte al rilascio.
-# Non metterci i tasti di cambio marcia (diventerebbero più lenti) né quelli di sterzo.
+# Long press (optional): the normal action fires on release.
+# Don't use it on shift buttons (they would get slower) or steering buttons.
 [long_press]
-y = "media:previous"         # brano precedente
+y = "media:previous"         # previous track
 
-# Doppio clic (opzionale): il clic singolo su quel tasto aspetta double_press_ms per sapere se ne arriva un secondo.
-# Stessa raccomandazione: non sui tasti di marcia e sterzo.
+# Double click (optional): the single click on that button waits double_press_ms to see if a second one comes.
+# Same advice: not on shift and steering buttons.
 [double_press]
-y = "media:next"             # brano successivo
+y = "media:next"             # next track

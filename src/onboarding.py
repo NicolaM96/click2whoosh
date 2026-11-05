@@ -8,7 +8,6 @@ della finestra), così le richieste di macOS compaiono una alla volta, spiegate.
 import ctypes
 import json
 import subprocess
-from pathlib import Path
 from typing import Callable
 
 import objc
@@ -18,9 +17,10 @@ from PyObjCTools import AppHelper
 
 import login
 import obc
+from i18n import _
 from webwindow import WebWindow
 
-HTML_PATH = Path(__file__).with_name("onboarding.html")
+PAGE = "onboarding.html"
 PRIVACY_URL = "x-apple.systempreferences:com.apple.preference.security?Privacy_"
 PRIVACY_PANES = {"bluetooth": "Bluetooth", "network": "LocalNetwork", "accessibility": "Accessibility"}
 
@@ -79,7 +79,7 @@ class OnboardingWindow(WebWindow):
     def __init__(self, get_status: Callable[[], dict], get_buttons: Callable[[], list],
                  start_bluetooth: Callable[[], None], start_network: Callable[[], None],
                  advertising: Callable[[], bool], open_settings: Callable[[], None]):
-        super().__init__("Benvenuto in Click2Whoosh", HTML_PATH, 600)
+        super().__init__(_("Welcome to Click2Whoosh"), PAGE, 600)
         self.get_status = get_status
         self.get_buttons = get_buttons
         self.start_bluetooth = start_bluetooth

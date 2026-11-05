@@ -52,7 +52,17 @@ OPCODE_CONTROLLER = 0x23
 
 SIDE_RIGHT = 0x0A
 SIDE_LEFT = 0x0B
-SIDE_NAMES = {SIDE_RIGHT: "destro", SIDE_LEFT: "sinistro"}
+SIDE_NAMES = {SIDE_RIGHT: "right", SIDE_LEFT: "left"}  # identifiers; the app shows translated names
+
+# What a Click is doing: codes, not text. The app turns them into words in the user's language.
+STATUS_SEARCHING = "searching"
+STATUS_RESTARTING = "restarting"
+STATUS_CONNECTED = "connected"
+STATUS_DISCONNECTED = "disconnected"
+STATUS_UNUSED = "unused"  # Bluetooth is not used at all (tests)
+STATUS_BLUETOOTH_OFF = "bluetooth_off"
+STATUS_BLUETOOTH_DENIED = "bluetooth_denied"
+STATUS_BLUETOOTH_UNAVAILABLE = "bluetooth_unavailable"
 
 # I tasti: nome (come in config.toml) -> (come si chiama nel menu e nella finestra, bit nella bitmask).
 BUTTONS = {
@@ -105,7 +115,7 @@ def parse_protobuf(data: bytes) -> dict[int, int]:
         elif wire_type == 1:
             pos += 8
         else:
-            raise ValueError(f"wire type {wire_type} non gestito")
+            raise ValueError(f"unhandled wire type {wire_type}")
     return fields
 
 
@@ -139,10 +149,10 @@ class ClickEvents:
 
 
 BLUETOOTH_PROBLEMS = {
-    BleakBluetoothNotAvailableReason.POWERED_OFF: "Bluetooth spento",
-    BleakBluetoothNotAvailableReason.DENIED_BY_USER: "permesso Bluetooth mancante",
-    BleakBluetoothNotAvailableReason.DENIED_BY_SYSTEM: "permesso Bluetooth mancante",
-    BleakBluetoothNotAvailableReason.DENIED_BY_UNKNOWN: "permesso Bluetooth mancante",
+    BleakBluetoothNotAvailableReason.POWERED_OFF: STATUS_BLUETOOTH_OFF,
+    BleakBluetoothNotAvailableReason.DENIED_BY_USER: STATUS_BLUETOOTH_DENIED,
+    BleakBluetoothNotAvailableReason.DENIED_BY_SYSTEM: STATUS_BLUETOOTH_DENIED,
+    BleakBluetoothNotAvailableReason.DENIED_BY_UNKNOWN: STATUS_BLUETOOTH_DENIED,
 }
 
 
@@ -196,7 +206,7 @@ class ClickSide:
             # Solo i tasti di questo Click: quelli dell'altro arrivano già dalla sua connessione.
             self.update_buttons(pressed_buttons(data[1:]) & set(SIDE_BUTTONS[self.side]))
         except (IndexError, ValueError) as e:
-            log.warning("[%s] messaggio non decodificato %s: %s", self.name, data.hex(" "), e)
+            log.warning("[%s] message not decoded %s: %s", self.name, data.hex(" "), e)
 
     def update_buttons(self, now: set[str]) -> None:
         for name in sorted(now - self.pressed):
@@ -219,7 +229,7 @@ class ClickSide:
             wake = client.services.get_characteristic(WAKE_CHAR_UUID)
             control = client.services.get_characteristic(WAKE_CONTROL_UUID)
             if wake is None or control is None:
-                log.warning("[%s] caratteristiche per tenerlo sveglio non trovate: uso il riavvio", self.name)
+                log.warning("[%s] wake characteristics not found: using the reset instead", self.name)
                 self.keepalive, self.keepalive_interval = "reset", RESET_AFTER_S
                 return await self.keep_awake(client)
             # Appena collegato: se ora non serve tenerlo sveglio, si aspetta comunque fino a
@@ -227,9 +237,9 @@ class ClickSide:
             waited = 0.0
             while not self.events.keep_awake_allowed():
                 if waited == 0:
-                    log.info("[%s] per ora non serve tenerlo sveglio", self.name)
+                    log.info("[%s] no need to keep it awake for now", self.name)
                 if waited >= 50:
-                    log.info("[%s] nessun tasto: si spegnerà da solo", self.name)
+                    log.info("[%s] no button pressed: it will switch itself off", self.name)
                     return
                 await asyncio.sleep(2)
                 waited += 2
@@ -242,7 +252,7 @@ class ClickSide:
                     waited += 5
                     if not self.events.keep_awake_allowed():
                         # Ogni ciclo lo tiene acceso ~15 minuti: lo si azzera per farlo spegnere subito.
-                        await self.power_off("nessun bisogno di tenerlo sveglio")
+                        await self.power_off("no need to keep it awake")
                         return
 
         if self.keepalive == "reset":
@@ -259,9 +269,9 @@ class ClickSide:
                 if age >= self.keepalive_interval - quiet_window and idle >= 2 and not self.pressed:
                     break
             if not self.events.keep_awake_allowed():
-                await self.power_off("nessun bisogno di tenerlo sveglio")
+                await self.power_off("no need to keep it awake")
                 return
-            log.info("[%s] collegato da %.0f s, tasti fermi da %.0f s: riavvio il Click", self.name, age, idle)
+            log.info("[%s] connected for %.0f s, buttons idle for %.0f s: restarting the Click", self.name, age, idle)
             self.just_reset = True
             await client.write_gatt_char(SYNC_RX_CHAR_UUID, bytes([OPCODE_RESET]), response=False)
 
@@ -269,13 +279,13 @@ class ClickSide:
         try:
             self.events.on_battery(self.name, (await client.read_gatt_char(BATTERY_LEVEL_UUID))[0])
         except Exception as e:
-            log.info("[%s] batteria non leggibile: %s", self.name, e)
+            log.info("[%s] battery not readable: %s", self.name, e)
 
     async def read_firmware(self, client: BleakClient) -> None:
         try:
             version = bytes(await client.read_gatt_char(FIRMWARE_UUID)).decode("utf-8", "replace").strip()
         except Exception as e:
-            log.info("[%s] firmware non leggibile: %s", self.name, e)
+            log.info("[%s] firmware not readable: %s", self.name, e)
             return
         self.firmware = version
         log.info("[%s] firmware %s", self.name, version)
@@ -283,7 +293,7 @@ class ClickSide:
 
     async def wake_sequence(self, client: BleakClient, wake, control) -> None:
         """La sequenza che tiene acceso il Click per altri ~15 minuti (944 s)."""
-        step = "riattivo le notifiche"
+        step = "re-enabling notifications"
         try:
             for characteristic in (wake, control):
                 # BikeControl riattiva le notifiche a ogni ciclo; bleak non lo permette se sono
@@ -292,20 +302,20 @@ class ClickSide:
                 if delegate is not None:
                     delegate.peripheral.setNotifyValue_forCharacteristic_(True, characteristic.obj)
             await asyncio.sleep(0.1)
-            step = "scrivo 01"
+            step = "writing 01"
             await client.write_gatt_char(control, b"\x01", response=False)
             await asyncio.sleep(0.06)
-            step = "scrivo il messaggio di wake"
+            step = "writing the wake message"
             await client.write_gatt_char(wake, WAKE_MESSAGE, response=False)
             await asyncio.sleep(0.06)
-            step = "scrivo 03"
+            step = "writing 03"
             await client.write_gatt_char(control, b"\x03", response=False)
         except Exception as e:
             # Il firmware (se noto) aiuta a capire se una versione nuova ha cambiato la sequenza.
-            log.warning("[%s] sequenza wake fallita al passo «%s» (firmware %s): %s",
+            log.warning("[%s] wake sequence failed at step '%s' (firmware %s): %s",
                         self.name, step, self.firmware or "?", e)
             raise
-        log.info("[%s] tenuto sveglio senza riavvio", self.name)
+        log.info("[%s] wake sequence ok: kept awake without a restart", self.name)
         await self.read_battery(client)
 
     async def power_off(self, reason: str) -> None:
@@ -318,12 +328,12 @@ class ClickSide:
         client = self.client
         if client is None or not client.is_connected:
             return
-        log.info("[%s] %s: lo faccio spegnere", self.name, reason)
+        log.info("[%s] %s: switching it off", self.name, reason)
         self.rest_until = time.monotonic() + 70
         try:
             await client.write_gatt_char(SYNC_RX_CHAR_UUID, bytes([OPCODE_RESET]), response=False)
         except Exception as e:
-            log.info("[%s] spegnimento non riuscito: %s", self.name, e)
+            log.info("[%s] switching off failed: %s", self.name, e)
 
     async def run_once(self) -> bool:
         """Una ricerca e, se trovato, una connessione fino alla disconnessione. True se si è collegato."""
@@ -333,9 +343,9 @@ class ClickSide:
             # volta dopo si cerca normalmente.
             self.just_reset = False
             device = self.device
-            self.events.on_status(self.name, "riavvio")
+            self.events.on_status(self.name, STATUS_RESTARTING)
         else:
-            self.events.on_status(self.name, "in cerca")
+            self.events.on_status(self.name, STATUS_SEARCHING)
             often = self.events.search_often()
             device = await self.find(timeout=10 if often else 8)
             if device is None:
@@ -356,7 +366,7 @@ class ClickSide:
         disconnected = asyncio.Event()
         loop = asyncio.get_running_loop()
         client = BleakClient(device, disconnected_callback=lambda _: loop.call_soon_threadsafe(disconnected.set))
-        log.info("[%s] mi collego a %s", self.name, device.name or device.address)
+        log.info("[%s] connecting to %s", self.name, device.name or device.address)
         async with client:
             self.client = client
             await client.start_notify(ASYNC_CHAR_UUID, lambda _, d: self.handle(bytes(d)))
@@ -366,12 +376,12 @@ class ClickSide:
                     characteristic = client.services.get_characteristic(uuid)
                     if characteristic is not None:
                         await client.start_notify(characteristic, lambda c, d: log.debug(
-                            "[%s] risposta %s: %s", self.name, c.uuid[:8], bytes(d).hex(" ")))
+                            "[%s] reply %s: %s", self.name, c.uuid[:8], bytes(d).hex(" ")))
             await client.write_gatt_char(SYNC_RX_CHAR_UUID, RIDE_ON, response=False)
             if self.side == SIDE_LEFT:
                 await client.write_gatt_char(SYNC_RX_CHAR_UUID, UNLOCKED_HELLO, response=False)
             self.last_message = time.monotonic()
-            self.events.on_status(self.name, "collegato")
+            self.events.on_status(self.name, STATUS_CONNECTED)
             # La batteria si legge al collegamento e a ogni ciclo per tenerlo sveglio
             # (vedi wake_sequence), più gli aggiornamenti che il Click manda da sé.
             await self.read_battery(client)
@@ -380,7 +390,7 @@ class ClickSide:
                 await client.start_notify(BATTERY_LEVEL_UUID,
                                           lambda _, d: d and self.events.on_battery(self.name, d[0]))
             except Exception as e:
-                log.info("[%s] notifiche batteria non disponibili: %s", self.name, e)
+                log.info("[%s] battery notifications not available: %s", self.name, e)
             keepalive = asyncio.create_task(self.keep_awake(client)) if self.keepalive else None
             if keepalive:
                 keepalive.add_done_callback(self._log_keepalive_error)
@@ -389,11 +399,11 @@ class ClickSide:
             finally:
                 if keepalive:
                     keepalive.cancel()
-        log.info("[%s] disconnesso", self.name)
+        log.info("[%s] disconnected", self.name)
 
     def _log_keepalive_error(self, task: asyncio.Task) -> None:
         if not task.cancelled() and task.exception() is not None:
-            log.warning("[%s] errore nel tenerlo sveglio: %s", self.name, task.exception())
+            log.warning("[%s] error while keeping it awake: %s", self.name, task.exception())
 
     async def run_forever(self) -> None:
         while True:
@@ -407,14 +417,14 @@ class ClickSide:
                 raise
             except BleakBluetoothNotAvailableError as e:
                 self.just_reset = False
-                problem = BLUETOOTH_PROBLEMS.get(e.reason, "Bluetooth non disponibile")
+                problem = BLUETOOTH_PROBLEMS.get(e.reason, STATUS_BLUETOOTH_UNAVAILABLE)
                 log.warning("[%s] %s", self.name, problem)
                 self.events.on_status(self.name, problem)
                 await asyncio.sleep(5)
                 continue
             except Exception as e:  # BLE su macOS fallisce in molti modi diversi
-                log.warning("[%s] errore: %s", self.name, e)
+                log.warning("[%s] error: %s", self.name, e)
             if connected and not self.just_reset:
-                self.events.on_status(self.name, "disconnesso")
+                self.events.on_status(self.name, STATUS_DISCONNECTED)
             await asyncio.sleep(0.2 if self.just_reset else 1)
 

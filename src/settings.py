@@ -13,12 +13,13 @@ from typing import Callable
 
 from PyObjCTools import AppHelper
 
-from actions import ACTION_CHOICES, DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, describe, repeatable
+from actions import DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, action_choices, describe, repeatable
 from ble import BUTTON_LABELS, SIDE_BUTTONS, SIDE_LEFT, SIDE_RIGHT
+from i18n import _
 from webwindow import WebWindow
 
 log = logging.getLogger("click2whoosh")
-HTML_PATH = Path(__file__).with_name("settings.html")
+PAGE = "settings.html"
 
 
 # ---------------------------------------------------------------- config.toml
@@ -34,8 +35,8 @@ def toml_value(value) -> str:
 
 
 def dump_config(raw: dict) -> str:
-    lines = ["# Configurazione di Click2Whoosh, scritta dalla finestra Impostazioni.",
-             "# Si può modificare anche a mano: le azioni possibili sono descritte nel README.", ""]
+    lines = ["# Click2Whoosh configuration, written by the Settings window.",
+             "# You can also edit it by hand: the possible actions are described in the README.", ""]
     for section in ("general", "buttons", "long_press", "double_press"):
         lines.append(f"[{section}]")
         for key, value in raw.get(section, {}).items():
@@ -101,7 +102,7 @@ def update_default_buttons(path: Path) -> None:
     left = raw.get("general", {}).get("use_left_side", True)
     if switch_default_buttons(raw, left):
         path.write_text(dump_config(raw), encoding="utf-8")
-        log.info("tasti aggiornati ai default per %s", "i due Click" if left else "il solo destro")
+        log.info("buttons updated to the defaults for %s", "both Clicks" if left else "the right Click only")
 
 
 def button_state(raw: dict, name: str) -> dict:
@@ -119,7 +120,7 @@ def button_summary(raw: dict, left: bool = False) -> list[dict]:
     summary = []
     for name in SIDE_BUTTONS[SIDE_RIGHT] + (SIDE_BUTTONS[SIDE_LEFT] if left else ()):
         state = button_state(raw, name)
-        extra = {"none": "", "repeat": "si ripete"}
+        extra = {"none": "", "repeat": _("repeats")}
         summary.append({"name": name, "label": BUTTON_LABELS[name], "single": describe(state["single"]),
                         "double": extra.get(state["double"], describe(state["double"])),
                         "long": extra.get(state["long"], describe(state["long"])), "held": state["held"],
@@ -136,7 +137,7 @@ class SettingsWindow(WebWindow):
 
     def __init__(self, config_path: Path, get_status: Callable[[], dict],
                  on_saved: Callable[[set], None], current_config: Callable[[], object]):
-        super().__init__("Click2Whoosh – Impostazioni", HTML_PATH, 860)
+        super().__init__(_("Click2Whoosh – Settings"), PAGE, 860)
         self.config_path = config_path
         self.get_status = get_status
         self.on_saved = on_saved
@@ -180,7 +181,7 @@ class SettingsWindow(WebWindow):
             "shift_sound": config.shift_sound,
         }
         actions = [{"group": group, "spec": spec, "label": label, "held": spec in HELD_ACTIONS}
-                   for group, spec, label in ACTION_CHOICES]
+                   for group, spec, label in action_choices()]
         return {
             "buttons": {name: button_state(raw, name) for name in BUTTON_LABELS},
             "labels": BUTTON_LABELS,
@@ -210,7 +211,7 @@ class SettingsWindow(WebWindow):
                 raw.setdefault("general", {})[key] = value
                 changed = {key}
                 if key == "use_left_side" and switch_default_buttons(raw, value):
-                    log.info("tasti riportati ai default per %s", "i due Click" if value else "il solo destro")
+                    log.info("buttons reset to the defaults for %s", "both Clicks" if value else "the right Click only")
             self.save(raw, changed)
 
     def save(self, raw: dict, changed: set) -> None:
@@ -219,8 +220,8 @@ class SettingsWindow(WebWindow):
         try:
             self.on_saved(changed)
         except Exception as e:  # configurazione rifiutata: si torna a quella di prima
-            log.error("impostazione non valida: %s", e)
+            log.error("invalid setting: %s", e)
             self.config_path.write_text(old_text, encoding="utf-8")
-            self._eval(f"alert({json.dumps(f'Impostazione non valida: {e}')})")
+            self._eval(f"alert({json.dumps(_('Invalid setting: {error}').format(error=e))})")
         self.push_state()
         self.call("c2wSaved")

@@ -25,6 +25,7 @@ from AppKit import NSEvent, NSSound, NSWorkspace
 from PyObjCTools import AppHelper
 
 import obc
+from i18n import _
 
 log = logging.getLogger("click2whoosh")
 
@@ -45,29 +46,34 @@ KEY_CODES = {
 MEDIA_KEYS = {"volup": 0, "voldown": 1, "playpause": 16, "next": 17, "previous": 18}
 
 # Le emote di MyWhoosh, sui tasti da 1 a 7.
-EMOTES = ["pace", "saluto", "pugno", "dab", "gomitata", "brindisi", "pollice su"]
+def emote_names() -> list[str]:
+    return [_("peace"), _("wave"), _("fist bump"), _("dab"), _("elbow bump"), _("cheers"), _("thumbs up")]
 
-# Nomi leggibili, per il menu e la finestra impostazioni: (gruppo, azione, etichetta).
-# Solo quello che MyWhoosh esegue davvero: visuale, menu, inversione a U, ERG ecc. li
-# dichiara via OpenBikeControl ma li ignora (lo segnala anche BikeControl).
-ACTION_CHOICES = [
-    ("MyWhoosh", "obc:shift_up", "Marcia su"),
-    ("MyWhoosh", "obc:shift_down", "Marcia giù"),
-    ("MyWhoosh", "obc:steer_left", "Sterza a sinistra"),
-    ("MyWhoosh", "obc:steer_right", "Sterza a destra"),
-    # Sinistra/destra insieme allo sterzo: da provare per scegliere la strada ai bivi.
-    ("MyWhoosh", "obc:steer_left+left", "Sterza a sinistra + Sinistra (bivi, da provare)"),
-    ("MyWhoosh", "obc:steer_right+right", "Sterza a destra + Destra (bivi, da provare)"),
-    ("Musica", "media:playpause", "Play/pausa"),
-    ("Musica", "media:next", "Brano successivo"),
-    ("Musica", "media:previous", "Brano precedente"),
-    ("Musica", "media:volup", "Volume su"),
-    ("Musica", "media:voldown", "Volume giù"),
-    ("Mac", "screenshot", "Screenshot del Mac"),
-    ("Tastiera", "key:u", "Tasto U (interfaccia minimale)"),
-    *(("Tastiera", f"key:{n}", f"Emote {n}: {name}") for n, name in enumerate(EMOTES, start=1)),
-]
-ACTION_LABELS = {spec: label for _, spec, label in ACTION_CHOICES}
+def action_choices() -> list[tuple[str, str, str]]:
+    """Readable names, for the menu and the Settings window: (group, action, label), translated.
+
+    Only what MyWhoosh really acts on: camera, menus, U-turn, ERG and so on are declared by
+    MyWhoosh over OpenBikeControl but ignored (BikeControl reports this too).
+    """
+    my_whoosh, music = "MyWhoosh", _("Music")
+    return [
+        (my_whoosh, "obc:shift_up", _("Shift up")),
+        (my_whoosh, "obc:shift_down", _("Shift down")),
+        (my_whoosh, "obc:steer_left", _("Steer left")),
+        (my_whoosh, "obc:steer_right", _("Steer right")),
+        # Left/right together with steering: to try, for choosing the road at forks.
+        (my_whoosh, "obc:steer_left+left", _("Steer left + Left (forks, experimental)")),
+        (my_whoosh, "obc:steer_right+right", _("Steer right + Right (forks, experimental)")),
+        (music, "media:playpause", _("Play/pause")),
+        (music, "media:next", _("Next track")),
+        (music, "media:previous", _("Previous track")),
+        (music, "media:volup", _("Volume up")),
+        (music, "media:voldown", _("Volume down")),
+        (_("Mac"), "screenshot", _("Mac screenshot")),
+        (_("Keyboard"), "key:u", _("U key (minimal interface)")),
+        *((_("Keyboard"), f"key:{n}", _("Emote {n}: {name}").format(n=n, name=name))
+          for n, name in enumerate(emote_names(), start=1)),
+    ]
 # Azioni che restano attive finché tieni premuto: niente doppio clic né pressione lunga.
 HELD_ACTIONS = {"obc:steer_left", "obc:steer_right", "obc:steer_left+left", "obc:steer_right+right"}
 # Tasti di default, secondo i Click in uso (chiave: si usa anche il sinistro).
@@ -96,14 +102,15 @@ def repeatable(spec: str) -> bool:
 
 
 def describe(spec: str) -> str:
-    if spec in ACTION_LABELS:
-        return ACTION_LABELS[spec]
-    kind, _, arg = spec.partition(":")
+    for _group, choice, label in action_choices():
+        if choice == spec:
+            return label
+    kind, _sep, arg = spec.partition(":")
     if kind == "key":
-        return f"Tasto {arg.upper()}"
+        return _("Key {key}").format(key=arg.upper())
     if kind == "hold":
-        return f"Tieni premuto {arg.upper()}"
-    return "Niente" if spec == "none" else spec
+        return _("Hold {key}").format(key=arg.upper())
+    return _("Nothing") if spec == "none" else spec
 
 
 def frontmost_app() -> str:
@@ -150,7 +157,7 @@ def take_screenshot() -> None:
     stamp = datetime.datetime.now().strftime("%Y-%m-%d %H.%M.%S")
     path = Path.home() / "Desktop" / f"MyWhoosh {stamp}.png"
     subprocess.Popen(["screencapture", "-x", str(path)])
-    log.info("screenshot salvato in %s", path)
+    log.info("screenshot saved to %s", path)
 
 
 class Action:
@@ -158,19 +165,21 @@ class Action:
 
     def __init__(self, spec: str):
         self.spec = spec
-        kind, _, arg = spec.partition(":")
+        kind, _sep, arg = spec.partition(":")
         self.kind, self.arg = kind, arg
         if kind in ("key", "hold") and arg not in KEY_CODES:
-            raise ValueError(f"tasto sconosciuto in '{spec}'. Disponibili: {', '.join(KEY_CODES)}")
+            raise ValueError(_("Unknown key in '{spec}'. Available: {available}").format(spec=spec, available=", ".join(KEY_CODES)))
         if kind == "media" and arg not in MEDIA_KEYS:
-            raise ValueError(f"tasto multimediale sconosciuto in '{spec}'. Disponibili: {', '.join(MEDIA_KEYS)}")
+            raise ValueError(_("Unknown media key in '{spec}'. Available: {available}").format(
+                spec=spec, available=", ".join(MEDIA_KEYS)))
         commands = arg.split("+") if kind == "obc" else []
         for command in commands:
             if command not in obc.BUTTONS:
-                raise ValueError(f"comando sconosciuto in '{spec}'. Disponibili: {', '.join(obc.BUTTONS)}")
+                raise ValueError(_("Unknown command in '{spec}'. Available: {available}").format(
+                    spec=spec, available=", ".join(obc.BUTTONS)))
         self.button_ids = [obc.BUTTONS[c] for c in commands]
         if kind not in ("obc", "key", "hold", "media", "screenshot", "none"):
-            raise ValueError(f"azione sconosciuta: '{spec}'")
+            raise ValueError(_("Unknown action: '{spec}'").format(spec=spec))
         # Senza rete vale il primo comando: "shift_up+select" diventa il tasto K.
         first = commands[0] if commands else None
         self.fallback = Action(OBC_KEYBOARD_FALLBACK[first]) if first in OBC_KEYBOARD_FALLBACK else None

@@ -1,4 +1,4 @@
-<!-- Parti comuni a settings.html e onboarding.html: webwindow.py le inserisce al posto del segnaposto "comune". -->
+{# Parti comuni a settings.html e onboarding.html: le due pagine le includono con {% include "common.html" %}. #}
 <style>
 :root {
   --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.12);
@@ -60,7 +60,23 @@ const KEYS = {
   <g class="btn" data-name="nav_down"><circle cx="110" cy="142" r="15"/><text x="110" y="147">↓</text></g>
   <g class="btn" data-name="minus"><rect x="93" y="181" width="34" height="34" rx="17"/><text x="110" y="203" style="font-size:20px">−</text></g>`,
 };
-const SIDE_NAMES = { left: "Sinistro", right: "Destro" };
+// Testi: la pagina è generata nella lingua dell'utente (vedi webwindow.page_html).
+const SIDE_NAMES = { left: {{ _("Left")|tojson }}, right: {{ _("Right")|tojson }} };
+const CLICK_NAMES = { left: {{ _("Left Click")|tojson }}, right: {{ _("Right Click")|tojson }} };
+// Lo stato dei Click arriva da Python come codice: qui diventa testo.
+const STATUS_TEXT = {
+  connected: {{ _("connected")|tojson }},
+  waiting: {{ _("waiting (press a button)")|tojson }},
+  bluetooth_off: {{ _("Bluetooth off")|tojson }},
+  bluetooth_denied: {{ _("Bluetooth permission missing")|tojson }},
+  bluetooth_unavailable: {{ _("Bluetooth unavailable")|tojson }},
+  unused: {{ _("Bluetooth not used")|tojson }},
+};
+
+// Riempie i segnaposto {nome} di un testo tradotto.
+function fmt(text, values) {
+  return text.replace(/\{(\w+)\}/g, (match, key) => key in values ? values[key] : match);
+}
 
 // Il disegno di un Click: il sinistro (frecce e −) va a sinistra, come sul manubrio.
 function puck(side, width) {

@@ -36,7 +36,7 @@ def set_enabled(enabled: bool) -> None:
         return
     bundle = app_bundle()
     if bundle is None:
-        raise RuntimeError("disponibile solo nell'app impacchettata")
+        raise RuntimeError("only available in the packaged app")
     PLIST.parent.mkdir(parents=True, exist_ok=True)
     with PLIST.open("wb") as f:
         plistlib.dump({

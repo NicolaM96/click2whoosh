@@ -15,9 +15,15 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import app
+import ble
+import i18n
 import obc
 from actions import Action
 from ble import ClickEvents, ClickSide, SIDE_LEFT, SIDE_RIGHT, pressed_buttons
+
+
+def setUpModule():
+    i18n.set_language("en")  # the expected texts below are English whatever the Mac's language is
 
 
 def varint(value: int) -> bytes:
@@ -328,22 +334,22 @@ class KeepAwakeTest(unittest.TestCase):
         config = app.Config(app.DEFAULT_CONFIG)
         bridge = app.ClickBridge(app.Dispatcher(config), config, use_bluetooth=False)
         with mock.patch.object(app, "notify") as notify:
-            bridge.on_firmware("destro", "1.1.0")
-            bridge.on_firmware("destro", "1.2.0")
-            bridge.on_firmware("destro", "1.2.0")
+            bridge.on_firmware("right", "1.1.0")
+            bridge.on_firmware("right", "1.2.0")
+            bridge.on_firmware("right", "1.2.0")
         self.assertEqual(notify.call_count, 1)
 
     def test_battery_only_while_connected(self):
         config = app.Config(app.DEFAULT_CONFIG)
         bridge = app.ClickBridge(app.Dispatcher(config), config, use_bluetooth=False)
         menu = mock.Mock(bridge=bridge)
-        bridge.battery["destro"] = 60
-        bridge.status["destro"] = "collegato"
-        bridge.battery["sinistro"] = 90
-        bridge.status["sinistro"] = "collegato"
-        self.assertEqual(app.MenuBarApp.batteries(menu), {"destro": 60, "sinistro": 90})
-        bridge.status["destro"] = "in cerca"  # scollegato: il 60% sarebbe un dato vecchio
-        self.assertEqual(app.MenuBarApp.batteries(menu), {"sinistro": 90})
+        bridge.battery["right"] = 60
+        bridge.status["right"] = ble.STATUS_CONNECTED
+        bridge.battery["left"] = 90
+        bridge.status["left"] = ble.STATUS_CONNECTED
+        self.assertEqual(app.MenuBarApp.batteries(menu), {"right": 60, "left": 90})
+        bridge.status["right"] = ble.STATUS_SEARCHING  # scollegato: il 60% sarebbe un dato vecchio
+        self.assertEqual(app.MenuBarApp.batteries(menu), {"left": 90})
 
     def test_sleep_reason_logged_once(self):
         config = app.Config(app.DEFAULT_CONFIG)
@@ -392,11 +398,17 @@ class KeepAwakeTest(unittest.TestCase):
                 watcher.check_lost()  # aperto ma scollegato dalla rete: avviso
             notify.assert_called_once()
 
-    def test_friendly_status(self):
-        self.assertEqual(app.friendly_status("riavvio"), "collegato")
-        self.assertEqual(app.friendly_status("in cerca"), "in attesa (premi un tasto)")
-        self.assertEqual(app.friendly_status("disconnesso"), "in attesa (premi un tasto)")
-        self.assertEqual(app.friendly_status("Bluetooth spento"), "Bluetooth spento")
+    def test_simple_status(self):
+        # Restarting and connected look the same, as do searching and disconnected.
+        self.assertEqual(app.simple_status(ble.STATUS_RESTARTING), ble.STATUS_CONNECTED)
+        self.assertEqual(app.simple_status(ble.STATUS_SEARCHING), app.STATUS_WAITING)
+        self.assertEqual(app.simple_status(ble.STATUS_DISCONNECTED), app.STATUS_WAITING)
+        self.assertEqual(app.simple_status(ble.STATUS_BLUETOOTH_OFF), ble.STATUS_BLUETOOTH_OFF)
+
+    def test_status_text(self):
+        self.assertEqual(app.status_text(ble.STATUS_CONNECTED), "connected")
+        self.assertEqual(app.status_text(app.STATUS_WAITING), "waiting (press a button)")
+        self.assertEqual(app.status_text(ble.STATUS_BLUETOOTH_OFF), "Bluetooth off")
 
     def test_invalid_config_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -561,11 +573,11 @@ class SettingsTest(unittest.TestCase):
         import settings
         keys = {k["name"]: k for k in settings.button_summary(self.raw())}
         self.assertEqual(list(keys), ["plus", "y", "z", "a", "b"])
-        self.assertEqual((keys["plus"]["single"], keys["plus"]["long"]), ("Marcia su", "si ripete"))
-        self.assertEqual((keys["y"]["double"], keys["y"]["long"]), ("Brano successivo", "Brano precedente"))
-        self.assertEqual(keys["z"]["single"], "Tasto U (interfaccia minimale)")
+        self.assertEqual((keys["plus"]["single"], keys["plus"]["long"]), ("Shift up", "repeats"))
+        self.assertEqual((keys["y"]["double"], keys["y"]["long"]), ("Next track", "Previous track"))
+        self.assertEqual(keys["z"]["single"], "U key (minimal interface)")
         self.assertEqual({k["side"] for k in keys.values()}, {"right"})
         left = {k["name"]: k for k in settings.button_summary(self.raw(), left=True) if k["side"] == "left"}
         self.assertEqual(list(left), ["minus", "nav_up", "nav_down", "nav_left", "nav_right"])
         self.assertTrue(left["nav_left"]["held"])
-        self.assertEqual(left["nav_up"]["long"], "si ripete")
+        self.assertEqual(left["nav_up"]["long"], "repeats")

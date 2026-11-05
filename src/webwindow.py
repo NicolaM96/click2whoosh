@@ -3,11 +3,15 @@
 La pagina parla con Python tramite window.webkit.messageHandlers.c2w.postMessage({type: ...});
 Python chiama le funzioni window.c2w… della pagina. Due messaggi li gestisce questa classe:
 "ready" (pagina caricata) e "size" (altezza del contenuto, per adattare la finestra).
-Colori, disegno del Click e funzioni comuni stanno in common.html, inserito al posto di <!-- comune -->.
+Colori, disegno del Click e funzioni comuni stanno in common.html, incluso dalle pagine.
+Le pagine sono template Jinja: il testo è scritto in inglese dentro {{ _("...") }} e viene
+tradotto quando la pagina è generata (vedi i18n.py).
 """
 
 import json
 from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
 
 import objc
 from AppKit import (NSApp, NSBackingStoreBuffered, NSWindow, NSWindowStyleMaskClosable,
@@ -16,14 +20,18 @@ from Foundation import NSMakeRect, NSNotificationCenter, NSObject
 from PyObjCTools import AppHelper
 from WebKit import WKWebView, WKWebViewConfiguration
 
+import i18n
+
 WKScriptMessageHandler = objc.protocolNamed("WKScriptMessageHandler")
-COMMON_PATH = Path(__file__).with_name("common.html")
+HTML_DIR = Path(__file__).parent
 
 
-def page_html(html_path: Path) -> str:
-    """La pagina con dentro le parti comuni: autosufficiente, senza dipendere da percorsi su disco."""
-    common = COMMON_PATH.read_text(encoding="utf-8")
-    return html_path.read_text(encoding="utf-8").replace("<!-- comune -->", common, 1)
+def page_html(name: str) -> str:
+    """La pagina nella lingua corrente, con dentro le parti comuni: autosufficiente, senza dipendere da percorsi su disco."""
+    env = Environment(loader=FileSystemLoader(HTML_DIR), extensions=["jinja2.ext.i18n"],
+                      autoescape=False, keep_trailing_newline=True)
+    env.install_gettext_callables(i18n.gettext_, i18n.ngettext, newstyle=False)
+    return env.get_template(name).render(lang=i18n.language)
 
 
 class _MessageHandler(NSObject, protocols=[WKScriptMessageHandler]):
@@ -52,9 +60,9 @@ class _WindowObserver(NSObject):
 class WebWindow:
     """Va creata e usata sul thread principale; call() si può chiamare da qualunque thread."""
 
-    def __init__(self, title: str, html_path: Path, width: float):
+    def __init__(self, title: str, page: str, width: float):
         self.title = title
-        self.html_path = html_path
+        self.page = page
         self.width = width
         self.window = None
         self.webview = None
@@ -104,7 +112,7 @@ class WebWindow:
         self.webview = WKWebView.alloc().initWithFrame_configuration_(self.window.contentView().bounds(), config)
         self.webview.setValue_forKey_(False, "drawsBackground")  # niente lampo bianco in modalità scura
         self.window.setContentView_(self.webview)
-        self.webview.loadHTMLString_baseURL_(page_html(self.html_path), None)
+        self.webview.loadHTMLString_baseURL_(page_html(self.page), None)
 
     def fit_height(self, height: float) -> None:
         """Adatta l'altezza della finestra alla pagina, tenendo fermo il bordo in alto."""

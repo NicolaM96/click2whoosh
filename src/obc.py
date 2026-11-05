@@ -46,7 +46,7 @@ BUTTON_NAMES = {v: k for k, v in BUTTONS.items()}
 
 
 def describe(ids: list[int]) -> str:
-    return ", ".join(BUTTON_NAMES.get(i, f"0x{i:02X}") for i in ids) or "tutti"
+    return ", ".join(BUTTON_NAMES.get(i, f"0x{i:02X}") for i in ids) or "all"
 
 
 @dataclass
@@ -99,11 +99,11 @@ class OBCServer:
                 self.tcp = await asyncio.start_server(self.handle, port=port)
                 break
             except OSError:
-                log.info("porta %d occupata, provo la successiva", port)
+                log.info("port %d is busy, trying the next one", port)
         else:
-            raise OSError("nessuna porta libera per OpenBikeControl")
+            raise OSError("no free port for OpenBikeControl")
         self.port = port
-        log.info("OpenBikeControl in ascolto sulla porta %d", self.port)
+        log.info("OpenBikeControl listening on port %d", self.port)
 
     async def stop(self) -> None:
         self.tcp.close()
@@ -113,7 +113,7 @@ class OBCServer:
 
     async def handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         peer = writer.get_extra_info("peername")
-        log.info("OpenBikeControl: collegato %s", peer[0] if peer else "?")
+        log.info("OpenBikeControl: connected %s", peer[0] if peer else "?")
         self.writers.add(writer)
         if len(self.writers) == 1:
             self.on_change(True)
@@ -124,14 +124,14 @@ class OBCServer:
                 buffer += data
                 buffer = self.consume(buffer)
         except (ConnectionError, OSError) as e:
-            log.info("OpenBikeControl: connessione chiusa (%s)", e)
+            log.info("OpenBikeControl: connection closed (%s)", e)
         finally:
             self.writers.discard(writer)
             if not self.writers:
                 self.app = None
                 self.on_change(False)
             writer.close()
-            log.info("OpenBikeControl: scollegato %s", peer[0] if peer else "?")
+            log.info("OpenBikeControl: disconnected %s", peer[0] if peer else "?")
 
     def consume(self, buffer: bytes) -> bytes:
         """Elabora i messaggi completi in buffer e restituisce quello che avanza."""
@@ -142,7 +142,7 @@ class OBCServer:
                 if not used:
                     return buffer
                 self.app = info
-                log.info("OpenBikeControl: app %s %s, comandi accettati: %s",
+                log.info("OpenBikeControl: app %s %s, accepted commands: %s",
                          info.app_id, info.version, describe(info.buttons))
                 buffer = buffer[used:]
             elif kind == MSG_HEARTBEAT:
@@ -152,7 +152,7 @@ class OBCServer:
                     return buffer
                 buffer = buffer[4:]
             else:
-                log.info("OpenBikeControl: messaggio sconosciuto %s", buffer.hex(" "))
+                log.info("OpenBikeControl: unknown message %s", buffer.hex(" "))
                 return b""
         return buffer
 
@@ -161,7 +161,7 @@ class OBCServer:
         message = [MSG_BUTTONS]
         for button_id in button_ids:
             if not self.supports(button_id):
-                log.info("%s non accettato da %s", BUTTON_NAMES.get(button_id, hex(button_id)), self.app.app_id)
+                log.info("%s not accepted by %s", BUTTON_NAMES.get(button_id, hex(button_id)), self.app.app_id)
             message += [button_id, 1 if pressed else 0]
         self._write(bytes(message))
 
@@ -200,7 +200,7 @@ class Advertiser:
             NSNetService.dataFromTXTRecordDictionary_({k: v.encode() for k, v in txt.items()})
         )
         self.service.publish()
-        log.info("annuncio Bonjour %s sulla porta %d", SERVICE_TYPE, port)
+        log.info("Bonjour announcement %s on port %d", SERVICE_TYPE, port)
 
     def stop(self) -> None:
         self.service.stop()
@@ -209,5 +209,5 @@ class Advertiser:
         """Dopo uno stop del Mac l'annuncio può essersi perso: lo si rifà."""
         self.service.stop()
         self.service.publish()
-        log.info("annuncio Bonjour rinnovato")
+        log.info("Bonjour announcement renewed")
 
