@@ -1,6 +1,6 @@
-"""Icona dell'app: icon.svg → PNG di tutte le misure → Click2Whoosh.icns (con iconutil).
+"""App icon: icon.svg → PNGs of all sizes → Click2Whoosh.icns (with iconutil).
 
-Usa il motore SVG di macOS (NSImage legge gli SVG da macOS 14), niente dipendenze in più.
+Uses macOS's SVG engine (NSImage reads SVGs from macOS 14), no extra dependencies.
     .venv/bin/python packaging/make_icons.py [--preview]
 """
 
@@ -34,7 +34,7 @@ def render(image: NSImage, size: int, path: Path) -> None:
 def main() -> None:
     image = NSImage.alloc().initWithContentsOfFile_(str(SVG))
     if image is None:
-        sys.exit(f"non riesco a leggere {SVG}")
+        sys.exit(f"cannot read {SVG}")
     if "--preview" in sys.argv:
         for size in (1024, 128, 32, 16):
             render(image, size, HERE / "build" / f"anteprima_{size}.png")

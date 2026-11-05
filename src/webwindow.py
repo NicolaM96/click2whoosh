@@ -1,11 +1,11 @@
-"""Finestra nativa con dentro una pagina HTML (WKWebView): la base di Impostazioni e Benvenuto.
+"""Native window holding an HTML page (WKWebView): the base of Settings and Welcome.
 
-La pagina parla con Python tramite window.webkit.messageHandlers.c2w.postMessage({type: ...});
-Python chiama le funzioni window.c2w… della pagina. Due messaggi li gestisce questa classe:
-"ready" (pagina caricata) e "size" (altezza del contenuto, per adattare la finestra).
-Colori, disegno del Click e funzioni comuni stanno in common.html, incluso dalle pagine.
-Le pagine sono template Jinja: il testo è scritto in inglese dentro {{ _("...") }} e viene
-tradotto quando la pagina è generata (vedi i18n.py).
+The page talks to Python through window.webkit.messageHandlers.c2w.postMessage({type: ...});
+Python calls the page's window.c2w… functions. This class handles two messages itself:
+"ready" (page loaded) and "size" (content height, to fit the window).
+Colors, the Click drawing and shared functions live in common.html, included by the pages.
+The pages are Jinja templates: the text is written in English inside {{ _("...") }} and is
+translated when the page is generated (see i18n.py).
 """
 
 import json
@@ -27,7 +27,7 @@ HTML_DIR = Path(__file__).parent
 
 
 def page_html(name: str) -> str:
-    """La pagina nella lingua corrente, con dentro le parti comuni: autosufficiente, senza dipendere da percorsi su disco."""
+    """The page in the current language, with the shared parts included: self-contained, not depending on paths on disk."""
     env = Environment(loader=FileSystemLoader(HTML_DIR), extensions=["jinja2.ext.i18n"],
                       autoescape=False, keep_trailing_newline=True)
     env.install_gettext_callables(i18n.gettext_, i18n.ngettext, newstyle=False)
@@ -46,7 +46,7 @@ class _MessageHandler(NSObject, protocols=[WKScriptMessageHandler]):
 
 
 class _WindowObserver(NSObject):
-    """Finestra chiusa: lo riferisce alla WebWindow."""
+    """Window closed: reports it to the WebWindow."""
 
     def initWithOwner_(self, owner):
         self = objc.super(_WindowObserver, self).init()
@@ -58,7 +58,7 @@ class _WindowObserver(NSObject):
 
 
 class WebWindow:
-    """Va creata e usata sul thread principale; call() si può chiamare da qualunque thread."""
+    """Must be created and used on the main thread; call() can be called from any thread."""
 
     def __init__(self, title: str, page: str, width: float):
         self.title = title
@@ -68,12 +68,12 @@ class WebWindow:
         self.webview = None
         self.handler = None
         self.observer = None
-        self.ready = False  # la pagina ha finito di caricarsi: prima non le si manda niente
+        self.ready = False  # the page has finished loading: nothing is sent to it before
 
     @property
     def focused(self) -> bool:
-        """In primo piano (finestra attiva). Letto anche dal thread del Bluetooth: si chiede
-        a macOS ogni volta invece di contare sugli avvisi, che possono non arrivare."""
+        """In front (active window). Also read from the Bluetooth thread: macOS is asked
+        every time instead of relying on notifications, which may not arrive."""
         return self.window is not None and bool(self.window.isKeyWindow())
 
     @property
@@ -83,8 +83,8 @@ class WebWindow:
     def show(self) -> None:
         if self.window is None:
             self._create()
-        # Da macOS 14 activateIgnoringOtherApps può essere ignorato: senza attivare l'app
-        # la finestra non diventa attiva e i tasti del Click farebbero le loro azioni.
+        # From macOS 14 activateIgnoringOtherApps may be ignored: without activating the app
+        # the window does not become active and the Click's buttons would run their actions.
         if hasattr(NSApp, "activate"):
             NSApp.activate()
         else:
@@ -110,12 +110,12 @@ class WebWindow:
         self.handler = _MessageHandler.alloc().initWithCallback_(self._message)
         config.userContentController().addScriptMessageHandler_name_(self.handler, "c2w")
         self.webview = WKWebView.alloc().initWithFrame_configuration_(self.window.contentView().bounds(), config)
-        self.webview.setValue_forKey_(False, "drawsBackground")  # niente lampo bianco in modalità scura
+        self.webview.setValue_forKey_(False, "drawsBackground")  # no white flash in dark mode
         self.window.setContentView_(self.webview)
         self.webview.loadHTMLString_baseURL_(page_html(self.page), None)
 
     def fit_height(self, height: float) -> None:
-        """Adatta l'altezza della finestra alla pagina, tenendo fermo il bordo in alto."""
+        """Fits the window height to the page, keeping the top edge fixed."""
         frame = self.window.frame()
         content = self.window.contentRectForFrameRect_(frame)
         new_height = max(300.0, min(height, 900.0))
@@ -131,7 +131,7 @@ class WebWindow:
             self.webview.evaluateJavaScript_completionHandler_(script, None)
 
     def call(self, function: str, *args) -> None:
-        """Chiama window.<function>(args) nella pagina, dal thread principale."""
+        """Calls window.<function>(args) in the page, from the main thread."""
         script = f"window.{function} && window.{function}({', '.join(json.dumps(a) for a in args)})"
         AppHelper.callAfter(self._eval, script)
 
@@ -145,7 +145,7 @@ class WebWindow:
         else:
             self.on_message(kind, message)
 
-    # ---- da ridefinire
+    # ---- to be overridden
 
     def on_ready(self) -> None:
         pass

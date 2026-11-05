@@ -15,7 +15,7 @@ h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
 .small { font-size: 12px; }
 b { font-weight: 600; }
 
-/* righe con stato: permessi, riepilogo */
+/* rows with a status: permissions, summary */
 .rows { display: grid; gap: 10px; }
 .row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 16px;
@@ -29,7 +29,7 @@ b { font-weight: 600; }
 .help { grid-column: 2 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
 button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 5px 16px; }
 
-/* disegno del Click */
+/* the Click drawing */
 .click-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
 .big { font-size: 16px; font-weight: 600; margin: 4px 0; }
 .puck-label.ok { color: var(--ok); }
@@ -38,10 +38,10 @@ button.primary { background: var(--accent); color: #fff; border: 0; border-radiu
 .side.stacked { grid-template-columns: minmax(0, 1fr); align-content: start; align-items: start; justify-items: center; gap: 10px; }
 .side.stacked .keys { justify-self: stretch; }
 
-/* passi numerati */
+/* numbered steps */
 ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
 
-/* tasti */
+/* buttons */
 .keys { display: grid; gap: 8px; }
 .key { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; }
 .badge { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff;
@@ -54,7 +54,7 @@ dl { margin: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap:
 dt { font-weight: 600; }
 dd { margin: 0; color: var(--muted); }
 
-/* barra in fondo */
+/* bottom bar */
 .nav { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
 .dots { display: flex; gap: 6px; }
 .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--off-bg); }
@@ -199,7 +199,7 @@ const T = {
 const pages = [...document.querySelectorAll(".page")];
 let current = 0;
 let status = null;
-let asked = {};  // permessi per cui hai già premuto "Consenti"
+let asked = {};  // permissions for which "Allow" has already been pressed
 
 function $(id) { return document.getElementById(id); }
 
@@ -215,7 +215,7 @@ function show(index) {
   requestAnimationFrame(reportHeight);
 }
 
-// ---- permessi
+// ---- permissions
 
 const PERM_HELP = {
   bluetooth: { denied: T.helpBluetoothDenied, off: T.helpBluetoothOff },
@@ -235,7 +235,7 @@ function renderPermissions() {
     const state = permState(name);
     const action = row.querySelector(".action");
     const key = `${name}:${state}`;
-    if (action.dataset.key !== key) {  // si ridisegna solo se cambia, per non perdere i clic
+    if (action.dataset.key !== key) {  // redrawn only if it changes, so clicks are not lost
       action.dataset.key = key;
       action.innerHTML =
         state === "ok" ? `<span class="tag ok">${T.allowed}</span>`
@@ -254,21 +254,21 @@ document.addEventListener("click", e => {
   if (open) send({ type: "open_privacy", what: open });
 });
 
-// ---- resto delle pagine
+// ---- the rest of the pages
 
-// I Click in uso con il loro stato: il sinistro solo se attivo nelle Impostazioni.
+// The Clicks in use with their status: the left one only if turned on in Settings.
 function clicks() {
   const used = status.click_left != null ? [["left", status.click_left]] : [];
   return [...used, ["right", status.click]];
 }
 function clicksConnected() { return clicks().every(([, s]) => s === "connected"); }
-function battery(side) { return status.batteries[side]; }  // solo se collegato
+function battery(side) { return status.batteries[side]; }  // only if connected
 
 function renderClick() {
   const list = clicks();
   const both = list.length > 1;
   const sides = list.map(([side]) => side).join();
-  if ($("click-pucks").dataset.sides !== sides) {  // si ridisegna solo se cambia, per non spegnere i tasti illuminati
+  if ($("click-pucks").dataset.sides !== sides) {  // redrawn only if it changes, so lit buttons don't go out
     $("click-pucks").dataset.sides = sides;
     $("click-pucks").innerHTML = list.map(([side]) =>
       `<div>${puck(side, both ? 120 : 170)}${both ? `<div class="puck-label" data-label="${side}"></div>` : ""}</div>`).join("");

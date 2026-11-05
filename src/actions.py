@@ -1,18 +1,18 @@
-"""Azioni che un tasto del Click può fare sul Mac.
+"""Actions a Click button can perform on the Mac.
 
-Formati accettati in config.toml:
-    "obc:shift_up"     comando OpenBikeControl mandato a MyWhoosh via rete (vedi obc.BUTTONS);
-                       marce e sterzo, se MyWhoosh non è collegato, ripiegano sulla tastiera
-    "obc:steer_left+left"  più comandi nello stesso messaggio: MyWhoosh usa quello che gli serve
-    "key:k"            preme e rilascia subito un tasto (cambio marcia, emote)
-    "hold:a"           tiene premuto il tasto finché tieni premuto il pulsante (sterzo)
-    "media:playpause"  tasti multimediali: playpause, next, previous, volup, voldown
-    "screenshot"       salva uno screenshot sulla Scrivania
-    "none"             niente
+Formats accepted in config.toml:
+    "obc:shift_up"     OpenBikeControl command sent to MyWhoosh over the network (see obc.BUTTONS);
+                       gears and steering fall back to the keyboard if MyWhoosh is not connected
+    "obc:steer_left+left"  several commands in the same message: MyWhoosh uses what it needs
+    "key:k"            presses and releases a key right away (shift, emote)
+    "hold:a"           holds the key down for as long as the button is held (steering)
+    "media:playpause"  media keys: playpause, next, previous, volup, voldown
+    "screenshot"       saves a screenshot on the Desktop
+    "none"             nothing
 
-"key" e "hold" partono solo se l'app scelta (MyWhoosh) è in primo piano,
-così il Click non scrive lettere in altre finestre. Media, screenshot e i
-comandi OpenBikeControl partono sempre.
+"key" and "hold" only fire if the chosen app (MyWhoosh) is in front,
+so the Click does not type letters into other windows. Media, screenshot and
+OpenBikeControl commands always fire.
 """
 
 import datetime
@@ -29,10 +29,10 @@ from i18n import _
 
 log = logging.getLogger("click2whoosh")
 
-# Se MyWhoosh non è collegato via OpenBikeControl, questi comandi usano la tastiera.
+# If MyWhoosh is not connected over OpenBikeControl, these commands use the keyboard.
 OBC_KEYBOARD_FALLBACK = {"shift_up": "key:k", "shift_down": "key:i", "steer_left": "hold:a", "steer_right": "hold:d"}
 
-# Codici tasto macOS (layout fisico, indipendenti dalla lingua della tastiera).
+# macOS key codes (physical layout, independent of the keyboard language).
 KEY_CODES = {
     "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9,
     "b": 11, "q": 12, "w": 13, "e": 14, "r": 15, "y": 16, "t": 17,
@@ -42,10 +42,10 @@ KEY_CODES = {
     "left": 123, "right": 124, "down": 125, "up": 126,
 }
 
-# Codici NX_KEYTYPE_* dei tasti multimediali.
+# NX_KEYTYPE_* codes of the media keys.
 MEDIA_KEYS = {"volup": 0, "voldown": 1, "playpause": 16, "next": 17, "previous": 18}
 
-# Le emote di MyWhoosh, sui tasti da 1 a 7.
+# MyWhoosh emotes, on keys 1 to 7.
 def emote_names() -> list[str]:
     return [_("peace"), _("wave"), _("fist bump"), _("dab"), _("elbow bump"), _("cheers"), _("thumbs up")]
 
@@ -74,11 +74,11 @@ def action_choices() -> list[tuple[str, str, str]]:
         *((_("Keyboard"), f"key:{n}", _("Emote {n}: {name}").format(n=n, name=name))
           for n, name in enumerate(emote_names(), start=1)),
     ]
-# Azioni che restano attive finché tieni premuto: niente doppio clic né pressione lunga.
+# Actions that stay active while the button is held: no double click or long press.
 HELD_ACTIONS = {"obc:steer_left", "obc:steer_right", "obc:steer_left+left", "obc:steer_right+right"}
-# Tasti di default, secondo i Click in uso (chiave: si usa anche il sinistro).
-# Col solo destro fa tutto lui; con tutti e due, come in Zwift: − e + marce, frecce sterzo.
-# "repeat": tasti che, tenuti premuti, ripetono il clic (es. più cambi di marcia di fila).
+# Default buttons, depending on the Clicks in use (key: whether the left one is used too).
+# With the right Click only it does everything; with both, as in Zwift: − and + shift, arrows steer.
+# "repeat": buttons that repeat the click while held (e.g. several shifts in a row).
 DEFAULT_BUTTONS = {
     False: {"buttons": {"plus": "obc:shift_up", "b": "obc:shift_down", "z": "obc:steer_left",
                         "a": "obc:steer_right", "y": "media:playpause", "minus": "obc:shift_down",
@@ -95,7 +95,7 @@ DEFAULT_REPEAT_BUTTONS = DEFAULT_BUTTONS[True]["repeat"]
 
 
 def repeatable(spec: str) -> bool:
-    """Se l'azione ha senso ripeterla tenendo premuto il tasto."""
+    """Whether it makes sense to repeat the action while the button is held."""
     if spec in ("media:volup", "media:voldown"):
         return True
     return spec.startswith(("obc:", "key:")) and spec not in HELD_ACTIONS
@@ -114,7 +114,7 @@ def describe(spec: str) -> str:
 
 
 def frontmost_app() -> str:
-    """Nome dell'app in primo piano (es. "MyWhoosh Indoor Cycling App")."""
+    """Name of the app in front (e.g. "MyWhoosh Indoor Cycling App")."""
     app = NSWorkspace.sharedWorkspace().frontmostApplication()
     return app.localizedName() or "" if app else ""
 
@@ -133,14 +133,14 @@ def post_media_key(key: int) -> None:
         Quartz.CGEventPost(0, event.CGEvent())
 
 
-# Suoni di sistema per confermare il cambio: il Click v2 non vibra.
+# System sounds to confirm the shift: the Click v2 does not vibrate.
 SHIFT_SOUNDS = {"up": "Tink", "down": "Pop"}
 SHIFT_VOLUME = 0.35
 _sounds: dict = {}
 
 
 def play_shift_sound(direction: str) -> None:
-    """Suona sul thread principale (NSSound non va usato da altri thread)."""
+    """Plays on the main thread (NSSound must not be used from other threads)."""
     def play() -> None:
         sound = _sounds.get(direction)
         if sound is None:
@@ -148,7 +148,7 @@ def play_shift_sound(direction: str) -> None:
             if sound is not None:
                 sound.setVolume_(SHIFT_VOLUME)
         if sound is not None:
-            sound.stop()  # con i cambi ripetuti il suono precedente può essere ancora in corso
+            sound.stop()  # with repeated shifts the previous sound may still be playing
             sound.play()
     AppHelper.callAfter(play)
 
@@ -161,7 +161,7 @@ def take_screenshot() -> None:
 
 
 class Action:
-    """Un'azione letta da config.toml."""
+    """An action read from config.toml."""
 
     def __init__(self, spec: str):
         self.spec = spec
@@ -180,7 +180,7 @@ class Action:
         self.button_ids = [obc.BUTTONS[c] for c in commands]
         if kind not in ("obc", "key", "hold", "media", "screenshot", "none"):
             raise ValueError(_("Unknown action: '{spec}'").format(spec=spec))
-        # Senza rete vale il primo comando: "shift_up+select" diventa il tasto K.
+        # Without a network the first command applies: "shift_up+select" becomes the K key.
         first = commands[0] if commands else None
         self.fallback = Action(OBC_KEYBOARD_FALLBACK[first]) if first in OBC_KEYBOARD_FALLBACK else None
         self.via_fallback = False
@@ -193,7 +193,7 @@ class Action:
 
     @property
     def shift_direction(self) -> str | None:
-        """"up"/"down" se l'azione cambia marcia (anche via tastiera di riserva), altrimenti None."""
+        """"up"/"down" if the action shifts gears (also via the fallback keyboard), otherwise None."""
         if self.kind == "obc" and self.button_ids:
             return {obc.BUTTONS["shift_up"]: "up", obc.BUTTONS["shift_down"]: "down"}.get(self.button_ids[0])
         if self.kind == "key":
@@ -202,7 +202,7 @@ class Action:
 
     @property
     def stays_pressed(self) -> bool:
-        """Va rilasciata quando si rilascia il pulsante."""
+        """Must be released when the button is released."""
         return self.kind in ("hold", "obc")
 
     def press(self) -> None:

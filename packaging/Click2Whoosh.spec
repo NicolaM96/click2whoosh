@@ -1,11 +1,11 @@
-# PyInstaller: costruisce Click2Whoosh.app (lanciato da build.sh).
+# PyInstaller: builds Click2Whoosh.app (run by build.sh).
 import time
 from pathlib import Path
 
 ROOT = Path(SPECPATH).parent / "src"
 VERSION = "1.0"
-# Numero di build crescente: se sul Mac restano altre copie (nel Cestino, su un .dmg montato),
-# macOS considera "quella vera" la più recente invece di disattivare quella in Applicazioni.
+# Increasing build number: if other copies are left on the Mac (in the Trash, on a mounted .dmg),
+# macOS treats the most recent one as "the real one" instead of deactivating the one in Applications.
 BUILD = time.strftime("%Y%m%d%H%M")
 
 a = Analysis(
@@ -28,7 +28,7 @@ app = BUNDLE(
     coll,
     name="Click2Whoosh.app",
     icon=str(Path(SPECPATH) / "Click2Whoosh.icns"),
-    bundle_identifier="com.click2whoosh.app",  # lo stesso di login.py
+    bundle_identifier="com.click2whoosh.app",  # the same as login.py
     version=VERSION,
     info_plist={
         "CFBundleName": "Click2Whoosh",
@@ -38,8 +38,8 @@ app = BUNDLE(
         "LSApplicationCategoryType": "public.app-category.healthcare-fitness",
         "CFBundleDevelopmentRegion": "en",
         "CFBundleLocalizations": ["en", "it"],  # languages of the app: macOS offers them per app too
-        "LSMinimumSystemVersion": "11.0",  # simboli SF dei menu
-        "LSUIElement": True,  # solo barra dei menu, niente Dock
+        "LSMinimumSystemVersion": "11.0",  # SF symbols in the menus
+        "LSUIElement": True,  # menu bar only, no Dock icon
         "NSHighResolutionCapable": True,
         # Default (English) texts of the permission dialogs; lproj/*.lproj/InfoPlist.strings translate them.
         "NSBluetoothAlwaysUsageDescription":

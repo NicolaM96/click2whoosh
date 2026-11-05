@@ -1,4 +1,4 @@
-{# Parti comuni a settings.html e onboarding.html: le due pagine le includono con {% include "common.html" %}. #}
+{# Parts shared by settings.html and onboarding.html: both pages include them with {% include "common.html" %}. #}
 <style>
 :root {
   --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.12);
@@ -20,7 +20,7 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .card { background: var(--card); border: 0.5px solid var(--line); border-radius: 12px; padding: 16px; }
 button { font: inherit; padding: 4px 12px; }
 
-/* disegno del Click: tasti premuti pieni; Y Z A B tengono il loro colore e cambiano il bordo */
+/* the Click drawing: pressed buttons are filled; Y Z A B keep their color and change the border */
 .pucks { display: flex; gap: 6px; }
 .puck-label { text-align: center; color: var(--muted); font-size: 12px; }
 .battery { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; white-space: nowrap; }
@@ -60,10 +60,10 @@ const KEYS = {
   <g class="btn" data-name="nav_down"><circle cx="110" cy="142" r="15"/><text x="110" y="147">↓</text></g>
   <g class="btn" data-name="minus"><rect x="93" y="181" width="34" height="34" rx="17"/><text x="110" y="203" style="font-size:20px">−</text></g>`,
 };
-// Testi: la pagina è generata nella lingua dell'utente (vedi webwindow.page_html).
+// Texts: the page is generated in the user's language (see webwindow.page_html).
 const SIDE_NAMES = { left: {{ _("Left")|tojson }}, right: {{ _("Right")|tojson }} };
 const CLICK_NAMES = { left: {{ _("Left Click")|tojson }}, right: {{ _("Right Click")|tojson }} };
-// Lo stato dei Click arriva da Python come codice: qui diventa testo.
+// The Clicks' status comes from Python as a code: here it becomes text.
 const STATUS_TEXT = {
   connected: {{ _("connected")|tojson }},
   waiting: {{ _("waiting (press a button)")|tojson }},
@@ -73,26 +73,26 @@ const STATUS_TEXT = {
   unused: {{ _("Bluetooth not used")|tojson }},
 };
 
-// Riempie i segnaposto {nome} di un testo tradotto.
+// Fills the {name} placeholders of a translated text.
 function fmt(text, values) {
   return text.replace(/\{(\w+)\}/g, (match, key) => key in values ? values[key] : match);
 }
 
-// Il disegno di un Click: il sinistro (frecce e −) va a sinistra, come sul manubrio.
+// The drawing of a Click: the left one (arrows and −) goes on the left, as on the handlebar.
 function puck(side, width) {
   return `<svg width="${width}" height="${Math.round(width * 260 / 220)}" viewBox="0 0 220 260">${SHAPE}${KEYS[side]}</svg>`;
 }
 
 function send(msg) { window.webkit.messageHandlers.c2w.postMessage(msg); }
 
-// La finestra si adatta all'altezza della pagina (vedi WebWindow.fit_height).
+// The window fits the height of the page (see WebWindow.fit_height).
 let lastHeight = 0;
 function reportHeight() {
   const height = Math.ceil(document.body.getBoundingClientRect().height);
   if (height !== lastHeight) { lastHeight = height; send({ type: "size", height }); }
 }
 
-// Livello della batteria: icona (riempita in proporzione) e percentuale.
+// Battery level: icon (filled in proportion) and percentage.
 function batteryHtml(level) {
   const fill = Math.max(1, Math.round(level / 100 * 14));
   return `<span class="battery"><svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true">
@@ -101,7 +101,7 @@ function batteryHtml(level) {
     <rect x="2" y="2" width="${fill}" height="6" rx="1" fill="currentColor"/></svg>${level}%</span>`;
 }
 
-// Tasto premuto sul Click vero: si illumina sul disegno.
+// Button pressed on the real Click: it lights up on the drawing.
 function lightKey(name, pressed) {
   document.querySelectorAll(`.btn[data-name="${name}"]`).forEach(el => el.classList.toggle("pressed", pressed));
 }

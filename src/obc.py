@@ -1,15 +1,15 @@
-"""OpenBikeControl: il Mac si presenta a MyWhoosh come telecomando di rete.
+"""OpenBikeControl: the Mac presents itself to MyWhoosh as a network remote control.
 
-Protocollo aperto (MIT): https://github.com/OpenBikeControl/openbikecontrol-protocol
-- annuncio Bonjour "_openbikecontrol._tcp", MyWhoosh si collega in TCP
-- noi -> app:  [0x01, id, stato, id, stato, ...]  stato 1 = premuto, 0 = rilasciato
-               [0x02, batteria, 1]               stato del dispositivo
-- app -> noi:  [0x04, versione, len, app_id, len, versione_app, n, id...]  comandi accettati
-               [0x03, schema, durata, intensità] vibrazione (il Click v2 non vibra: ignorata)
+Open protocol (MIT): https://github.com/OpenBikeControl/openbikecontrol-protocol
+- Bonjour announcement "_openbikecontrol._tcp", MyWhoosh connects over TCP
+- us -> app:  [0x01, id, state, id, state, ...]  state 1 = pressed, 0 = released
+              [0x02, battery, 1]                 device status
+- app -> us:  [0x04, version, len, app_id, len, app_version, n, id...]  accepted commands
+              [0x03, pattern, duration, intensity] vibration (the Click v2 does not vibrate: ignored)
 
-L'annuncio usa NSNetService, cioè il Bonjour di sistema: MyWhoosh risolve l'indirizzo
-chiedendo proprio a lui. NSNetService va pubblicato da un thread con run loop (quello
-principale dell'app); il server TCP gira invece nel loop asyncio del Bluetooth.
+The announcement uses NSNetService, i.e. the system Bonjour: MyWhoosh resolves the address
+by asking it directly. NSNetService must be published from a thread with a run loop (the
+app's main one); the TCP server runs instead in the Bluetooth asyncio loop.
 """
 
 import asyncio
@@ -21,7 +21,7 @@ from typing import Callable
 log = logging.getLogger("click2whoosh")
 
 SERVICE_TYPE = "_openbikecontrol._tcp."
-ADVERTISED_NAME = "Click2Whoosh"  # il nome che MyWhoosh mostra nell'elenco
+ADVERTISED_NAME = "Click2Whoosh"  # the name MyWhoosh shows in its list
 SERVICE_UUID = "d273f680-d548-419d-b9d1-fa0472345229"
 PREFERRED_PORT = 36867
 
@@ -29,9 +29,9 @@ MSG_BUTTONS = 0x01
 MSG_STATUS = 0x02
 MSG_HAPTIC = 0x03
 MSG_APP_INFO = 0x04
-MSG_HEARTBEAT = 0x00  # MyWhoosh lo manda ogni ~4 s; non è nella specifica e non vuole risposta
+MSG_HEARTBEAT = 0x00  # MyWhoosh sends it every ~4 s; it is not in the spec and expects no reply
 
-# Nomi usati in config.toml ("obc:shift_up") -> ID del protocollo.
+# Names used in config.toml ("obc:shift_up") -> protocol IDs.
 BUTTONS = {
     "shift_up": 0x01, "shift_down": 0x02, "gear_set": 0x03,
     "up": 0x10, "down": 0x11, "left": 0x12, "right": 0x13,
@@ -53,14 +53,14 @@ def describe(ids: list[int]) -> str:
 class AppInfo:
     app_id: str
     version: str
-    buttons: list[int]  # vuota = l'app accetta tutto
+    buttons: list[int]  # empty = the app accepts everything
 
 
 def parse_app_info(data: bytes) -> tuple[AppInfo | None, int]:
-    """Decodifica un messaggio 0x04 all'inizio di data. Restituisce (info, byte usati);
-    (None, 0) se il messaggio non è ancora arrivato tutto."""
+    """Decodes a 0x04 message at the start of data. Returns (info, bytes used);
+    (None, 0) if the message has not fully arrived yet."""
     try:
-        pos = 2  # tipo, versione del formato
+        pos = 2  # type, format version
         n = data[pos]; app_id = data[pos + 1:pos + 1 + n].decode("utf-8", "replace"); pos += 1 + n
         n = data[pos]; version = data[pos + 1:pos + 1 + n].decode("utf-8", "replace"); pos += 1 + n
         n = data[pos]; buttons = list(data[pos + 1:pos + 1 + n]); pos += 1 + n
@@ -73,14 +73,14 @@ def parse_app_info(data: bytes) -> tuple[AppInfo | None, int]:
 
 @dataclass
 class OBCServer:
-    """Server TCP a cui si collega MyWhoosh. Thread-safe: send() si può chiamare da ogni thread."""
+    """TCP server MyWhoosh connects to. Thread-safe: send() can be called from any thread."""
 
     loop: asyncio.AbstractEventLoop | None = None
     port: int = 0
     app: AppInfo | None = None
     battery: int = 0xFF
     writers: set = field(default_factory=set)
-    # Chiamata (dal thread del Bluetooth) quando un'app si collega (True) o l'ultima si scollega (False).
+    # Called (from the Bluetooth thread) when an app connects (True) or the last one disconnects (False).
     on_change: Callable[[bool], None] = lambda connected: None
 
     @property
@@ -92,8 +92,8 @@ class OBCServer:
 
     async def start(self) -> None:
         self.loop = asyncio.get_running_loop()
-        # Si provano porte fisse una dopo l'altra (non la porta 0, che darebbe porte
-        # diverse a IPv4 e IPv6 mentre se ne può annunciare una sola).
+        # We try fixed ports one after another (not port 0, which would give
+        # different ports to IPv4 and IPv6 while only one can be announced).
         for port in range(PREFERRED_PORT, PREFERRED_PORT + 20):
             try:
                 self.tcp = await asyncio.start_server(self.handle, port=port)
@@ -134,7 +134,7 @@ class OBCServer:
             log.info("OpenBikeControl: disconnected %s", peer[0] if peer else "?")
 
     def consume(self, buffer: bytes) -> bytes:
-        """Elabora i messaggi completi in buffer e restituisce quello che avanza."""
+        """Processes the complete messages in buffer and returns what is left over."""
         while buffer:
             kind = buffer[0]
             if kind == MSG_APP_INFO:
@@ -157,7 +157,7 @@ class OBCServer:
         return buffer
 
     def send(self, button_ids: list[int], pressed: bool) -> None:
-        """Uno o più comandi nello stesso messaggio: l'app usa quelli che le servono."""
+        """One or more commands in the same message: the app uses the ones it needs."""
         message = [MSG_BUTTONS]
         for button_id in button_ids:
             if not self.supports(button_id):
@@ -185,7 +185,7 @@ server = OBCServer()
 
 
 class Advertiser:
-    """Annuncio Bonjour di sistema. Da creare e usare sul thread principale."""
+    """System Bonjour announcement. Create and use it on the main thread."""
 
     def __init__(self, port: int, name: str = ADVERTISED_NAME):
         from Foundation import NSNetService
@@ -206,7 +206,7 @@ class Advertiser:
         self.service.stop()
 
     def republish(self) -> None:
-        """Dopo uno stop del Mac l'annuncio può essersi perso: lo si rifà."""
+        """After the Mac sleeps the announcement may be lost: it is made again."""
         self.service.stop()
         self.service.publish()
         log.info("Bonjour announcement renewed")

@@ -1,4 +1,4 @@
-"""Test della logica che non ha bisogno del Click né di MyWhoosh.
+"""Tests of the logic that needs neither the Click nor MyWhoosh.
 
     .venv/bin/python -m unittest discover tests
 """
@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-# Il codice sta in src/: lo rende importabile da qui.
+# The code lives in src/: make it importable from here.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import app
@@ -44,7 +44,7 @@ def keypad(*masks: int) -> bytes:
 
 class DecodeTest(unittest.TestCase):
     def test_frames_from_the_real_click(self):
-        # Byte copiati dai log del Click v2 (firmware 1.1.0).
+        # Bytes copied from the Click v2 logs (firmware 1.1.0).
         self.assertEqual(pressed_buttons(bytes.fromhex("08ffffffff0f")), set())
         self.assertEqual(pressed_buttons(bytes.fromhex("08dfffffff0f")), {"b"})
         self.assertEqual(pressed_buttons(bytes.fromhex("08efffffff0f")), {"a"})
@@ -57,20 +57,20 @@ class DecodeTest(unittest.TestCase):
         side = ClickSide(SIDE_RIGHT, ClickEvents(on_press=lambda n: events.append(("▼", n)),
                                                  on_release=lambda n: events.append(("▲", n))))
         side.handle(keypad(0x01000))
-        side.handle(keypad(0x01000))  # il Click ripete lo stesso stato: nessun nuovo evento
+        side.handle(keypad(0x01000))  # the Click repeats the same state: no new event
         side.handle(keypad())
         self.assertEqual(events, [("▼", "plus"), ("▲", "plus")])
 
     def test_each_click_keeps_only_its_buttons(self):
-        # Il sinistro inoltra anche i tasti del destro: Y non deve arrivare due volte.
+        # The left Click also forwards the right one's buttons: Y must not arrive twice.
         events = []
         left = ClickSide(SIDE_LEFT, ClickEvents(on_press=lambda n: events.append(n)))
-        left.handle(keypad(0x00040 | 0x00100))  # Y (destro) e − (sinistro) insieme
+        left.handle(keypad(0x00040 | 0x00100))  # Y (right) and − (left) together
         self.assertEqual(events, ["minus"])
 
     def test_garbage_does_not_crash(self):
         side = ClickSide(SIDE_RIGHT, ClickEvents())
-        side.handle(bytes([0x23, 0x08, 0xFF]))  # varint troncato
+        side.handle(bytes([0x23, 0x08, 0xFF]))  # truncated varint
         side.handle(b"")
 
 
@@ -104,7 +104,7 @@ class DispatcherTest(unittest.TestCase):
         d = self.make()
         with mock.patch.object(app, "frontmost_app", return_value="Safari"):
             d.on_press("plus")
-            d.on_press("y"); d.on_release("y")  # la musica parte sempre
+            d.on_press("y"); d.on_release("y")  # music always plays
         self.assertEqual(self.log, [("press", "media:next")])
         with mock.patch.object(app, "frontmost_app", return_value="MyWhoosh Indoor Cycling App"):
             d.on_press("plus"); d.on_release("plus")
@@ -127,9 +127,9 @@ class DispatcherTest(unittest.TestCase):
     def test_single_double_and_long_press(self):
         d = self.make()
         d.config.double_press = {"y": FakeAction("media:previous", self.log)}
-        d.on_press("y"); d.on_release("y"); time.sleep(0.2)          # singolo: dopo l'attesa
-        d.on_press("y"); d.on_release("y"); d.on_press("y"); d.on_release("y"); time.sleep(0.2)  # doppio
-        d.on_press("y"); time.sleep(0.2); d.on_release("y")          # lungo
+        d.on_press("y"); d.on_release("y"); time.sleep(0.2)          # single: after the wait
+        d.on_press("y"); d.on_release("y"); d.on_press("y"); d.on_release("y"); time.sleep(0.2)  # double
+        d.on_press("y"); time.sleep(0.2); d.on_release("y")          # long
         self.assertEqual(self.log, [("press", "media:next"), ("press", "media:previous"),
                                     ("press", "media:playpause")])
 
@@ -139,8 +139,8 @@ class DispatcherTest(unittest.TestCase):
         d.listener = lambda name, pressed: seen.append((name, pressed))
         d.capture = lambda: True
         d.on_press("y"); d.on_release("y"); time.sleep(0.2)
-        self.assertEqual(self.log, [])  # niente musica
-        self.assertEqual(seen, [("y", True), ("y", False)])  # ma il tasto si illumina
+        self.assertEqual(self.log, [])  # no music
+        self.assertEqual(seen, [("y", True), ("y", False)])  # but the button lights up
         d.capture = lambda: False
         d.on_press("y"); d.on_release("y"); time.sleep(0.2)
         self.assertEqual(self.log, [("press", "media:next")])
@@ -153,7 +153,7 @@ class DispatcherTest(unittest.TestCase):
                 mock.patch.object(obc.server, "send"), mock.patch("actions.post_media_key"):
             d.on_press("plus"); d.on_release("plus")
             d.on_press("minus"); d.on_release("minus")
-            d.on_press("nav_left"); d.on_release("nav_left")  # lo sterzo non suona
+            d.on_press("nav_left"); d.on_release("nav_left")  # steering makes no sound
             self.assertEqual([c.args for c in sound.call_args_list], [("up",), ("down",)])
             d.config.shift_sound = False
             d.on_press("plus"); d.on_release("plus")
@@ -165,7 +165,7 @@ class DispatcherTest(unittest.TestCase):
         with mock.patch.object(app, "frontmost_app", return_value="MyWhoosh"):
             d.on_press("plus"); time.sleep(0.3); d.on_release("plus")
             count = self.log.count(("press", "key:k"))
-            time.sleep(0.2)  # dopo il rilascio non deve più ripetere
+            time.sleep(0.2)  # after the release it must not repeat any more
             self.assertEqual(self.log.count(("press", "key:k")), count)
         self.assertGreaterEqual(count, 3)
 
@@ -177,14 +177,14 @@ class KeepAwakeTest(unittest.TestCase):
             with mock.patch.object(app, "frontmost_app", return_value="Safari"):
                 self.assertTrue(bridge.keep_awake_allowed())
                 bridge.dispatcher.last_press -= 11 * 60
-                self.assertFalse(bridge.keep_awake_allowed())  # MyWhoosh dietro: 10 minuti
+                self.assertFalse(bridge.keep_awake_allowed())  # MyWhoosh behind: 10 minutes
             with mock.patch.object(app, "frontmost_app", return_value="MyWhoosh Indoor Cycling App"):
-                self.assertTrue(bridge.keep_awake_allowed())  # MyWhoosh davanti: fino a 60 minuti
+                self.assertTrue(bridge.keep_awake_allowed())  # MyWhoosh in front: up to 60 minutes
                 bridge.dispatcher.last_press -= 50 * 60
                 self.assertFalse(bridge.keep_awake_allowed())
         bridge.dispatcher.last_press = time.monotonic()
         with mock.patch.object(app, "mywhoosh_running", return_value=False):
-            self.assertTrue(bridge.keep_awake_allowed())  # tasto appena premuto: resta sveglio
+            self.assertTrue(bridge.keep_awake_allowed())  # button just pressed: stays awake
             bridge.dispatcher.last_press -= 3 * 60
             self.assertFalse(bridge.keep_awake_allowed())
 
@@ -225,7 +225,7 @@ class KeepAwakeTest(unittest.TestCase):
         client = FakeClient()
         side = ClickSide(SIDE_RIGHT, ClickEvents())
         asyncio.run(side.wake_sequence(client, Char(ble.WAKE_CHAR_UUID), Char(ble.WAKE_CONTROL_UUID)))
-        # Gli stessi byte che BikeControl manda al Click (cattura PacketLogger).
+        # The same bytes BikeControl sends to the Click (PacketLogger capture).
         self.assertEqual(client.writes, [
             ("0102", "01"),
             ("0100", "3d b8 f3 96 00 00 00 00 00 01 00 00 00 b0 03 00 00 00"),
@@ -246,7 +246,7 @@ class KeepAwakeTest(unittest.TestCase):
         loop = asyncio.new_event_loop()
         threading.Thread(target=loop.run_forever, daemon=True).start()
         bridge.loop = loop
-        bridge.power_off_all("prova")  # come fanno Esci e lo stop del Mac, dal thread principale
+        bridge.power_off_all("prova")  # as Quit and the Mac's sleep do, from the main thread
         loop.call_soon_threadsafe(loop.stop)
         self.assertEqual(calls, ["prova"])
 
@@ -273,7 +273,7 @@ class KeepAwakeTest(unittest.TestCase):
             async def read_gatt_char(self, uuid):
                 return bytearray([80])
 
-        answers = iter([False, True])  # appena collegato non serve; poi premi un tasto
+        answers = iter([False, True])  # just connected it is not needed; then a button is pressed
         side = ClickSide(SIDE_RIGHT, ClickEvents(keep_awake_allowed=lambda: next(answers, True)),
                          keepalive="wake", keepalive_interval=600)
         client = FakeClient()
@@ -317,8 +317,8 @@ class KeepAwakeTest(unittest.TestCase):
                 return sleep
 
         sleep = asyncio.run(run())
-        side.find.assert_awaited_once_with(timeout=8)  # ricerca...
-        sleep.assert_awaited_once_with(4)              # ...e breve pausa
+        side.find.assert_awaited_once_with(timeout=8)  # search...
+        sleep.assert_awaited_once_with(4)              # ...and a short pause
 
     def test_search_often_follows_mywhoosh(self):
         config = app.Config(app.DEFAULT_CONFIG)
@@ -348,7 +348,7 @@ class KeepAwakeTest(unittest.TestCase):
         bridge.battery["left"] = 90
         bridge.status["left"] = ble.STATUS_CONNECTED
         self.assertEqual(app.MenuBarApp.batteries(menu), {"right": 60, "left": 90})
-        bridge.status["right"] = ble.STATUS_SEARCHING  # scollegato: il 60% sarebbe un dato vecchio
+        bridge.status["right"] = ble.STATUS_SEARCHING  # disconnected: the 60% would be stale data
         self.assertEqual(app.MenuBarApp.batteries(menu), {"left": 90})
 
     def test_sleep_reason_logged_once(self):
@@ -359,7 +359,7 @@ class KeepAwakeTest(unittest.TestCase):
                 self.assertLogs("click2whoosh", level="INFO") as logs:
             for _ in range(5):
                 self.assertFalse(bridge.keep_awake_allowed())
-        self.assertEqual(len(logs.output), 1)  # niente spam: una riga sola
+        self.assertEqual(len(logs.output), 1)  # no spam: a single line
 
     def test_no_search_right_after_power_off(self):
         side = ClickSide(SIDE_RIGHT, ClickEvents())
@@ -388,14 +388,14 @@ class KeepAwakeTest(unittest.TestCase):
         bridge.power_off_all.assert_called_once()
         watcher.mac_woke()
         self.assertFalse(bridge.mac_sleeping)
-        republish.assert_called_once()  # al risveglio si rifà l'annuncio per MyWhoosh
+        republish.assert_called_once()  # on wake the announcement for MyWhoosh is made again
         with mock.patch.object(app, "notify") as notify, \
                 mock.patch.object(obc.OBCServer, "connected", new_callable=mock.PropertyMock, return_value=False):
             with mock.patch.object(app, "mywhoosh_running", return_value=False):
-                watcher.check_lost()  # MyWhoosh chiuso da te: nessun avviso
+                watcher.check_lost()  # MyWhoosh closed by you: no warning
             notify.assert_not_called()
             with mock.patch.object(app, "mywhoosh_running", return_value=True):
-                watcher.check_lost()  # aperto ma scollegato dalla rete: avviso
+                watcher.check_lost()  # open but disconnected from the network: warning
             notify.assert_called_once()
 
     def test_simple_status(self):
@@ -445,17 +445,17 @@ class OpenBikeControlTest(unittest.TestCase):
             messages = await reader.readexactly(11)
             info = server.app
             writer.close()
-            await asyncio.sleep(0.1)  # il server si accorge della chiusura
+            await asyncio.sleep(0.1)  # the server notices the closing
             await server.stop()
             return status, info, messages
 
         changes = []
         status, info, messages = asyncio.run(scenario())
-        self.assertEqual(changes, [True, False])  # collegato, poi scollegato
+        self.assertEqual(changes, [True, False])  # connected, then disconnected
         self.assertEqual(status, bytes([0x02, 0xFF, 0x01]))
         self.assertEqual((info.app_id, info.version, info.buttons), ("mywhoosh", "5.1", [0x01, 0x02, 0x40]))
         self.assertEqual(messages, bytes([0x01, 0x40, 0x01, 0x01, 0x40, 0x00,
-                                          0x01, 0x01, 0x01, 0x14, 0x01]))  # marcia su + conferma insieme
+                                          0x01, 0x01, 0x01, 0x14, 0x01]))  # shift up + confirm together
 
     def test_combined_command_falls_back_to_first(self):
         combo = Action("obc:shift_up+select")
@@ -481,7 +481,7 @@ class OpenBikeControlTest(unittest.TestCase):
         with mock.patch.object(obc.OBCServer, "connected", new_callable=mock.PropertyMock, return_value=False), \
                 mock.patch("actions.post_key") as post_key, mock.patch.object(obc.server, "send") as send:
             self.assertTrue(shift.needs_target_app)
-            self.assertFalse(camera.needs_target_app)  # nessun tasto equivalente: va solo via rete
+            self.assertFalse(camera.needs_target_app)  # no equivalent key: it only goes over the network
             shift.press(); shift.release()
             self.assertEqual([c.args for c in post_key.call_args_list], [(40, True), (40, False)])
             send.assert_not_called()
@@ -526,7 +526,7 @@ class SettingsTest(unittest.TestCase):
         self.assertTrue(settings.switch_default_buttons(raw, True))
         self.assertEqual(raw["buttons"]["nav_up"], "media:volup")
         self.assertIn("nav_up", raw["general"]["repeat_buttons"])
-        # tasti cambiati a mano: non si toccano
+        # buttons changed by hand: not touched
         settings.apply_button_change(raw, "a", "single", "key:3")
         self.assertFalse(settings.switch_default_buttons(raw, False))
         self.assertEqual(raw["buttons"]["a"], "key:3")
@@ -535,14 +535,14 @@ class SettingsTest(unittest.TestCase):
         import settings
         from actions import DEFAULT_BUTTONS
         raw = self.raw()
-        settings.switch_default_buttons(raw, False)  # come una config creata coi tasti del solo destro
+        settings.switch_default_buttons(raw, False)  # like a config created with the right Click's buttons only
         raw["general"]["use_left_side"] = True
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "config.toml"
             path.write_text(settings.dump_config(raw))
             settings.update_default_buttons(path)
             self.assertEqual(app.Config(path).buttons["nav_up"].spec, "media:volup")
-            # personalizzata: non si tocca
+            # customized: not touched
             raw["buttons"]["y"] = "media:next"
             path.write_text(settings.dump_config(raw))
             settings.update_default_buttons(path)
@@ -564,7 +564,7 @@ class SettingsTest(unittest.TestCase):
         settings.apply_button_change(raw, "plus", "long", "repeat")
         self.assertIn("plus", raw["general"]["repeat_buttons"])
         self.assertNotIn("plus", raw["long_press"])
-        # Lo sterzo non può avere doppio clic né pressione lunga.
+        # Steering cannot have a double click or a long press.
         settings.apply_button_change(raw, "y", "single", "obc:steer_left")
         self.assertNotIn("y", raw["long_press"])
         self.assertNotIn("y", raw["double_press"])

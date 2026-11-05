@@ -1,7 +1,7 @@
-"""Avvio al login tramite un LaunchAgent dell'utente.
+"""Launch at login through a user LaunchAgent.
 
-Funziona solo con l'app impacchettata (Click2Whoosh.app): lanciato direttamente da
-launchd, Python da solo non ha il permesso Bluetooth e macOS lo chiuderebbe.
+Only works with the packaged app (Click2Whoosh.app): launched directly by
+launchd, Python alone does not have the Bluetooth permission and macOS would close it.
 """
 
 import plistlib
@@ -13,7 +13,7 @@ PLIST = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
 
 
 def app_bundle() -> Path | None:
-    """Percorso di Click2Whoosh.app se stiamo girando dentro l'app impacchettata."""
+    """Path of Click2Whoosh.app if we are running inside the packaged app."""
     if not getattr(sys, "frozen", False):
         return None
     for parent in Path(sys.executable).resolve().parents:

@@ -1,13 +1,13 @@
-"""click2whoosh: usa lo Zwift Click v2 con MyWhoosh su Mac.
+"""click2whoosh: use the Zwift Click v2 with MyWhoosh on a Mac.
 
-Avvio:
+Launch:
     .venv/bin/python src/app.py
 
-Compare un'icona nella barra dei menu. Il Bluetooth gira in un thread a parte;
-la barra dei menu legge lo stato una volta al secondo.
+An icon appears in the menu bar. Bluetooth runs in a separate thread;
+the menu bar reads the status once a second.
 
-La configurazione sta in ~/Library/Application Support/Click2Whoosh/config.toml
-(creata al primo avvio copiando config.toml di questa cartella), il registro in
+The configuration lives in ~/Library/Application Support/Click2Whoosh/config.toml
+(created on first launch by copying config.toml from this folder), the log in
 ~/Library/Logs/Click2Whoosh/click2whoosh.log.
 """
 
@@ -40,11 +40,11 @@ from i18n import _
 DEFAULT_CONFIG = Path(__file__).with_name("config.toml")
 CONFIG_PATH = Path.home() / "Library" / "Application Support" / "Click2Whoosh" / "config.toml"
 LOG_PATH = Path.home() / "Library" / "Logs" / "Click2Whoosh" / "click2whoosh.log"
-TARGET_APP = "MyWhoosh"  # basta che il nome dell'app lo contenga ("MyWhoosh Indoor Cycling App")
-WAKE_INTERVAL_S = 300  # ogni sequenza "wake" tiene acceso il Click ~15 minuti: la si rinnova ogni 5
-SLEEP_AFTER_FRONT_MIN = 60  # senza tasti, con MyWhoosh in primo piano (magari stai pedalando in ERG)
-SLEEP_AFTER_MIN = 10  # senza tasti, con MyWhoosh dietro altre finestre
-REPEAT_DELAY_S = 0.4  # tenendo premuto un tasto ripetibile, dopo quanto parte la ripetizione
+TARGET_APP = "MyWhoosh"  # it is enough for the app name to contain it ("MyWhoosh Indoor Cycling App")
+WAKE_INTERVAL_S = 300  # each "wake" sequence keeps the Click on for ~15 minutes: it is renewed every 5
+SLEEP_AFTER_FRONT_MIN = 60  # no buttons, with MyWhoosh in front (you may be riding in ERG)
+SLEEP_AFTER_MIN = 10  # no buttons, with MyWhoosh behind other windows
+REPEAT_DELAY_S = 0.4  # holding a repeatable button, how long before the repetition starts
 REPEAT_INTERVAL_S = 0.2
 CONNECTED_STATES = (STATUS_CONNECTED, STATUS_RESTARTING)
 WAITING_STATES = (STATUS_SEARCHING, STATUS_DISCONNECTED)
@@ -53,8 +53,8 @@ log = logging.getLogger("click2whoosh")
 
 
 def simple_status(status: str) -> str:
-    """Lo stato del Click ridotto a connected / waiting / un problema, senza l'altalena
-    in cerca/disconnesso mentre dorme. È un codice: il testo lo dà status_text()."""
+    """The Click's status reduced to connected / waiting / a problem, without the
+    searching/disconnected seesaw while it sleeps. It is a code: status_text() gives the text."""
     if status in CONNECTED_STATES:
         return STATUS_CONNECTED
     if status in WAITING_STATES:
@@ -63,7 +63,7 @@ def simple_status(status: str) -> str:
 
 
 def status_text(code: str) -> str:
-    """Lo stato di simple_status() a parole, nella lingua dell'utente."""
+    """The status from simple_status() in words, in the user's language."""
     return {
         STATUS_CONNECTED: _("connected"),
         STATUS_WAITING: _("waiting (press a button)"),
@@ -79,9 +79,9 @@ def click_name(side: str) -> str:
 
 
 def notify(title: str, message: str) -> None:
-    """Notifica di macOS. Nell'app impacchettata passa da UNUserNotificationCenter, così compare
-    il logo di Click2Whoosh; da Terminale non c'è un'app a cui intestarla e si usa osascript
-    (rumps.notification usa NSUserNotification, che su macOS recenti non arriva più)."""
+    """macOS notification. In the packaged app it goes through UNUserNotificationCenter, so the
+    Click2Whoosh logo shows; from Terminal there is no app to attribute it to and osascript is used
+    (rumps.notification uses NSUserNotification, which no longer arrives on recent macOS)."""
     if login.app_bundle() is None:
         notify_with_osascript(title, message)
         return
@@ -92,7 +92,7 @@ def notify(title: str, message: str) -> None:
         center.setDelegate_(_NotificationDelegate.alloc().init())
 
     def authorized(granted: bool, error) -> None:
-        # La prima volta macOS chiede il permesso; poi risponde subito.
+        # The first time macOS asks for permission; after that it answers right away.
         if error is not None:
             log.info("system notifications not available (%s): using osascript", error)
             notify_with_osascript(title, message)
@@ -116,7 +116,7 @@ def notify_with_osascript(title: str, message: str) -> None:
 
 
 class _NotificationDelegate(NSObject):
-    """Mostra la notifica anche quando Click2Whoosh è in primo piano (es. con le Impostazioni aperte)."""
+    """Shows the notification even when Click2Whoosh is in front (e.g. with Settings open)."""
 
     def userNotificationCenter_willPresentNotification_withCompletionHandler_(self, center, notification, handler):
         from UserNotifications import UNNotificationPresentationOptionBanner, UNNotificationPresentationOptionList
@@ -133,7 +133,7 @@ def mywhoosh_in_front() -> bool:
 
 
 class Config:
-    """config.toml: solo ciò che ha senso cambiare (le stesse cose della finestra Impostazioni)."""
+    """config.toml: only what makes sense to change (the same things as the Settings window)."""
 
     def __init__(self, path: Path):
         with path.open("rb") as f:
@@ -158,20 +158,20 @@ class Config:
 
 
 class Dispatcher:
-    """Trasforma pressioni e rilasci dei tasti in azioni sul Mac."""
+    """Turns button presses and releases into actions on the Mac."""
 
     def __init__(self, config: Config):
         self.config = config
         self.last_button = "—"
-        self.last_press = time.monotonic()  # all'avvio conta come attività
-        self.active: dict[str, Action] = {}  # azioni "hold" premute, da rilasciare
+        self.last_press = time.monotonic()  # at startup it counts as activity
+        self.active: dict[str, Action] = {}  # "hold" actions pressed, to be released
         self.long_timers: dict[str, threading.Timer] = {}
         self.long_fired: set[str] = set()
         self.single_timers: dict[str, threading.Timer] = {}
         self.double_fired: set[str] = set()
-        self.repeats: dict[str, threading.Event] = {}  # tasti che stanno ripetendo; set() li ferma
-        self.listener = None  # chiamata a ogni pressione/rilascio fisico: (nome, premuto)
-        # Se True i tasti non eseguono azioni (finestra Impostazioni in primo piano: servono a selezionare).
+        self.repeats: dict[str, threading.Event] = {}  # buttons that are repeating; set() stops them
+        self.listener = None  # called on every physical press/release: (name, pressed)
+        # If True the buttons run no actions (Settings window in front: they are for selecting).
         self.capture = lambda: False
         self.captured: set[str] = set()
 
@@ -196,7 +196,7 @@ class Dispatcher:
                 play_shift_sound(direction)
 
     def tap(self, name: str, action: Action) -> None:
-        """Preme e rilascia subito (azioni decise al rilascio o dopo un'attesa)."""
+        """Presses and releases right away (actions decided on release or after a wait)."""
         self.run(name, action)
         self.release_active(name)
 
@@ -211,7 +211,7 @@ class Dispatcher:
             return
         waiting = self.single_timers.pop(name, None)
         if waiting:
-            # Secondo clic entro il tempo: doppio clic.
+            # Second click within the time: double click.
             waiting.cancel()
             self.double_fired.add(name)
             self.tap(f"{name} double", self.config.double_press[name])
@@ -223,7 +223,7 @@ class Dispatcher:
             timer.start()
             return
         if name in self.config.double_press:
-            return  # si decide al rilascio
+            return  # decided on release
         if name not in self.config.buttons:
             self.last_button = _("{button} → nothing").format(button=BUTTON_LABELS.get(name, name))
             return
@@ -235,12 +235,12 @@ class Dispatcher:
             threading.Thread(target=self.repeat, args=(name, action, stop), daemon=True).start()
 
     def repeat(self, name: str, action: Action, stop: threading.Event) -> None:
-        """Tenendo premuto il tasto, l'azione si ripete (es. più cambi di marcia di fila)."""
+        """While the button is held, the action repeats (e.g. several shifts in a row)."""
         if stop.wait(REPEAT_DELAY_S):
             return
         while not stop.is_set():
             if action.stays_pressed:
-                action.release()  # ogni ripetizione deve essere una pressione nuova
+                action.release()  # each repetition must be a new press
             self.run(name, action)
             stop.wait(REPEAT_INTERVAL_S)
 
@@ -264,13 +264,13 @@ class Dispatcher:
             self.double_fired.discard(name)
             self.long_fired.discard(name)
         elif name in self.config.double_press:
-            # Aspetta un eventuale secondo clic prima di decidere che era un clic singolo.
+            # Wait for a possible second click before deciding it was a single click.
             single = self.config.buttons.get(name)
             timer = threading.Timer(self.config.double_window_s, self.fire_single, args=(name, single))
             self.single_timers[name] = timer
             timer.start()
         elif timer and name in self.config.buttons:
-            # Pressione breve su un tasto con pressione lunga: azione normale, come un tocco.
+            # Short press on a button with a long press: normal action, like a tap.
             self.tap(name, self.config.buttons[name])
         self.release_active(name)
 
@@ -280,15 +280,15 @@ class Dispatcher:
             self.tap(name, action)
 
     def release_active(self, name: str) -> None:
-        # Si rilascia sempre, anche se nel frattempo MyWhoosh non è più in primo piano,
-        # altrimenti il tasto resterebbe premuto.
+        # Always release, even if MyWhoosh is no longer in front in the meantime,
+        # otherwise the key would stay pressed.
         action = self.active.pop(name, None)
         if action:
             action.release()
 
 
 class ClickBridge:
-    """Thread con il loop asyncio che tiene collegati i Click e il server OpenBikeControl."""
+    """Thread with the asyncio loop that keeps the Clicks and the OpenBikeControl server connected."""
 
     def __init__(self, dispatcher: Dispatcher, config: Config, use_bluetooth: bool = True):
         self.dispatcher = dispatcher
@@ -298,14 +298,14 @@ class ClickBridge:
         if config.use_left_side:
             self.status["left"] = STATUS_SEARCHING
         self.battery: dict[str, int] = {}
-        self.warned: set[str] = set()  # batteria scarica già segnalata
+        self.warned: set[str] = set()  # low battery already reported
         self.warned_firmware: set[str] = set()
-        self.mac_sleeping = False  # durante lo stop del Mac non si tiene sveglio il Click
-        self.last_reason = ""  # per scrivere nel registro il motivo solo quando cambia
+        self.mac_sleeping = False  # while the Mac sleeps the Click is not kept awake
+        self.last_reason = ""  # to write the reason in the log only when it changes
         self.sides: list[ClickSide] = []
-        self.loop: asyncio.AbstractEventLoop | None = None  # il loop del Bluetooth, quando parte
-        # Al primo avvio la ricerca del Click (e quindi la richiesta del permesso Bluetooth)
-        # aspetta il pulsante "Consenti" della finestra di benvenuto.
+        self.loop: asyncio.AbstractEventLoop | None = None  # the Bluetooth loop, once it starts
+        # On first launch the search for the Click (and so the Bluetooth permission request)
+        # waits for the "Allow" button of the welcome window.
         self.bluetooth_go = threading.Event()
         self.events = ClickEvents(
             on_press=dispatcher.on_press,
@@ -340,14 +340,14 @@ class ClickBridge:
                        click=click_name(side), version=version, tested=TESTED_FIRMWARE))
 
     def search_often(self) -> bool:
-        """Ricerca continua con MyWhoosh aperto; altrimenti leggera (il Mac consuma meno)."""
+        """Continuous search with MyWhoosh open; otherwise light (the Mac uses less)."""
         return not self.mac_sleeping and mywhoosh_running()
 
     def keep_awake_allowed(self) -> bool:
-        """Tenerlo sveglio consuma la pila: solo con MyWhoosh aperto e tasti premuti di recente.
+        """Keeping it awake drains the battery: only with MyWhoosh open and buttons pressed recently.
 
-        Con MyWhoosh in primo piano probabilmente stai pedalando (magari in ERG, senza
-        cambiare marcia), quindi si aspetta di più prima di lasciarlo spegnere.
+        With MyWhoosh in front you are probably riding (maybe in ERG, without
+        shifting), so we wait longer before letting it switch off.
         """
         reason = self.sleep_reason()
         if reason and reason != self.last_reason:
@@ -356,12 +356,12 @@ class ClickBridge:
         return not reason
 
     def sleep_reason(self) -> str:
-        """Perché il Click può spegnersi; stringa vuota se va tenuto sveglio."""
+        """Why the Click may switch off; empty string if it should be kept awake."""
         if self.mac_sleeping:
             return "the Mac is going to sleep"
         idle_min = (time.monotonic() - self.dispatcher.last_press) / 60
         if idle_min < 2:
-            return ""  # lo stai usando adesso (magari solo per la musica)
+            return ""  # you are using it right now (maybe only for the music)
         if not mywhoosh_running():
             return f"{TARGET_APP} is not open and no button for at least 2 minutes"
         in_front = mywhoosh_in_front()
@@ -372,12 +372,12 @@ class ClickBridge:
         return ""
 
     def power_off_all(self, reason: str) -> None:
-        """Spegne i Click collegati; da chiamare da un thread diverso da quello del Bluetooth."""
+        """Switches off the connected Clicks; to be called from a thread other than the Bluetooth one."""
         if self.loop is None:
             return
 
         async def power_off() -> None:
-            # gather va chiamato dentro il loop del Bluetooth, non dal thread che chiama.
+            # gather must be called inside the Bluetooth loop, not from the calling thread.
             await asyncio.gather(*(side.power_off(reason) for side in self.sides))
 
         future = asyncio.run_coroutine_threadsafe(power_off(), self.loop)
@@ -387,7 +387,7 @@ class ClickBridge:
             log.info("switching off at quit failed: %s", e)
 
     def start(self) -> None:
-        """Avvia il thread; restituisce quando il server OpenBikeControl (se attivo) ha la sua porta."""
+        """Starts the thread; returns when the OpenBikeControl server (if active) has its port."""
         self.obc_ready = threading.Event()
         threading.Thread(target=self.run, daemon=True).start()
         self.obc_ready.wait(5)
@@ -415,11 +415,11 @@ class ClickBridge:
 
 class MenuBarApp(rumps.App):
     def __init__(self, bridge: ClickBridge, dispatcher: Dispatcher, first_run: bool = False):
-        # "Esci" è una voce nostra: quella di rumps chiuderebbe senza spegnere il Click.
+        # "Quit" is our own item: the rumps one would close without switching the Click off.
         super().__init__("Click2Whoosh", quit_button=None)
         self.bridge = bridge
         self.dispatcher = dispatcher
-        self.advertiser = None  # annuncio Bonjour per MyWhoosh: vedi start_advertising()
+        self.advertiser = None  # Bonjour announcement for MyWhoosh: see start_advertising()
 
         from onboarding import OnboardingWindow
         from settings import SettingsWindow
@@ -428,7 +428,7 @@ class MenuBarApp(rumps.App):
                                            self.start_advertising, lambda: self.advertiser is not None,
                                            self.settings.show)
         dispatcher.listener = self.pressed
-        # Con una delle due finestre in primo piano i tasti del Click si illuminano e basta.
+        # With one of the two windows in front the Click's buttons only light up.
         dispatcher.capture = lambda: self.settings.focused or self.onboarding.focused
         self.watcher = SystemWatcher(bridge, dispatcher, self.republish)
 
@@ -450,24 +450,24 @@ class MenuBarApp(rumps.App):
         set_image(log_item, icons.symbol("doc.text"))
         set_image(self.header, icons.logo(14))
         for item in (self.header, self.last_item):
-            item._menuitem.setEnabled_(False)  # righe informative, non cliccabili
+            item._menuitem.setEnabled_(False)  # informational rows, not clickable
         self.login_item.state = login.is_enabled()
         self.refresh(None)
-        # I timer di rumps si fermano mentre il menu è aperto: questo gira in tutti i modi
-        # del run loop, così stato e batteria si aggiornano anche col menu aperto.
+        # rumps timers stop while the menu is open: this one runs in all the run loop
+        # modes, so status and battery update even with the menu open.
         self.ticker = _Ticker.alloc().initWithCallback_(lambda: self.refresh(None))
         timer = NSTimer.timerWithTimeInterval_target_selector_userInfo_repeats_(1.0, self.ticker, "tick:", None, True)
         NSRunLoop.currentRunLoop().addTimer_forMode_(timer, NSRunLoopCommonModes)
         if first_run:
-            # Bluetooth e rete partono dai pulsanti della finestra, così macOS chiede un permesso
-            # alla volta. Dopo l'avvio dell'app: se la finestra nasce prima, WebKit non carica la pagina.
+            # Bluetooth and network start from the window's buttons, so macOS asks for one permission
+            # at a time. After the app starts: if the window is created before, WebKit does not load the page.
             AppHelper.callLater(1.0, self.onboarding.show)
         else:
             bridge.allow_bluetooth()
             self.start_advertising()
 
     def start_advertising(self) -> None:
-        """Si annuncia a MyWhoosh. La prima volta macOS chiede il permesso Rete locale."""
+        """Announces itself to MyWhoosh. The first time macOS asks for the Local Network permission."""
         if self.advertiser is None and obc.server.port:
             self.advertiser = obc.Advertiser(obc.server.port)
 
@@ -476,7 +476,7 @@ class MenuBarApp(rumps.App):
             self.advertiser.republish()
 
     def pressed(self, name: str, is_pressed: bool) -> None:
-        """Tasto fisico premuto o rilasciato (thread del Bluetooth): lo si mostra nelle finestre."""
+        """Physical button pressed or released (Bluetooth thread): shown in the windows."""
         self.settings.pressed(name, is_pressed)
         self.onboarding.pressed(name, is_pressed)
 
@@ -485,20 +485,20 @@ class MenuBarApp(rumps.App):
         return button_summary(self.settings.read_raw(), left="left" in self.bridge.status)
 
     def batteries(self) -> dict[str, int]:
-        """Batteria di ogni Click, solo se collegato: scollegato il numero sarebbe vecchio."""
+        """Battery of each Click, only if connected: disconnected the number would be stale."""
         return {side: level for side, level in self.bridge.battery.items()
                 if self.bridge.status.get(side) in CONNECTED_STATES}
 
     def status(self) -> dict:
         right = self.bridge.status.get("right", "?")
-        left = self.bridge.status.get("left")  # None se il sinistro non si usa
+        left = self.bridge.status.get("left")  # None if the left Click is not used
         return {"click": simple_status(right), "click_left": left and simple_status(left),
                 "batteries": self.batteries(), "mywhoosh": obc.server.connected}
 
     def refresh(self, sender) -> None:
         batteries = self.batteries()
         for side, item in self.side_items.items():
-            # Collegato: icona della batteria e percentuale. Altrimenti un pallino grigio.
+            # Connected: battery icon and percentage. Otherwise a gray dot.
             battery = batteries.get(side)
             item.title = _("{click}: {status}").format(
                 click=click_name(side), status=status_text(simple_status(self.bridge.status.get(side, "?")))) + (
@@ -533,29 +533,29 @@ class MenuBarApp(rumps.App):
         subprocess.Popen(["open", "-t", str(LOG_PATH)])
 
     def config_saved(self, changed: set) -> None:
-        """Chiamata dalla finestra Impostazioni dopo aver scritto config.toml."""
-        config = Config(CONFIG_PATH)  # se non è valida solleva e la finestra ripristina il file
+        """Called by the Settings window after writing config.toml."""
+        config = Config(CONFIG_PATH)  # if invalid it raises and the window restores the file
         self.dispatcher.config = self.bridge.config = config
         if "use_left_side" in changed:
             notify("Click2Whoosh", _("This change takes effect the next time the app starts"))
 
 
 class SystemWatcher:
-    """Reagisce agli eventi del sistema: stop e risveglio del Mac, MyWhoosh che si scollega dalla rete."""
+    """Reacts to system events: the Mac sleeping and waking, MyWhoosh disconnecting from the network."""
 
     def __init__(self, bridge: ClickBridge, dispatcher: Dispatcher, republish):
         self.bridge = bridge
         self.dispatcher = dispatcher
-        self.republish = republish  # rifà l'annuncio Bonjour
+        self.republish = republish  # renews the Bonjour announcement
         self.lost_notified = False
         obc.server.on_change = self.mywhoosh_changed
         rumps.events.on_sleep.register(self.mac_sleeping)
         rumps.events.on_wake.register(self.mac_woke)
 
     def mywhoosh_changed(self, connected: bool) -> None:
-        """MyWhoosh collegato o scollegato via rete (chiamata dal thread del Bluetooth)."""
+        """MyWhoosh connected or disconnected over the network (called from the Bluetooth thread)."""
         if not connected:
-            # Se sei tu ad aver chiuso MyWhoosh non serve avvisare: si controlla tra qualche secondo.
+            # If you closed MyWhoosh yourself there is no need to warn: we check again in a few seconds.
             threading.Timer(4, self.check_lost).start()
         elif self.lost_notified:
             self.lost_notified = False
@@ -570,15 +570,15 @@ class SystemWatcher:
 
     def mac_sleeping(self) -> None:
         log.info("the Mac is going to sleep")
-        # Il Click altrimenti resterebbe acceso fino a ~15 minuti; il flag evita che,
-        # ricollegandosi al volo, gli si ridiano subito.
+        # Otherwise the Click would stay on for up to ~15 minutes; the flag stops it from
+        # being given the wake again right away when it reconnects quickly.
         self.bridge.mac_sleeping = True
         self.bridge.power_off_all("Mac asleep")
 
     def mac_woke(self) -> None:
         log.info("the Mac woke up")
         self.bridge.mac_sleeping = False
-        self.dispatcher.last_press = time.monotonic()  # al risveglio si riparte come all'avvio
+        self.dispatcher.last_press = time.monotonic()  # on wake we start again as at launch
         self.republish()
 
 
@@ -593,11 +593,11 @@ class _Ticker(NSObject):
 
 
 def app_version() -> str:
-    """Versione e data della build (dall'Info.plist dell'app), per capire quale copia è installata."""
+    """Version and build date (from the app's Info.plist), to tell which copy is installed."""
     if login.app_bundle() is None:
         return _("(from Terminal)")
     info = NSBundle.mainBundle().infoDictionary()
-    build = str(info.get("CFBundleVersion", ""))  # AAAAMMGGhhmm, vedi Click2Whoosh.spec
+    build = str(info.get("CFBundleVersion", ""))  # YYYYMMDDhhmm, see Click2Whoosh.spec
     date = f" ({build[:4]}-{build[4:6]}-{build[6:8]})" if len(build) == 12 else ""
     return f"{info.get('CFBundleShortVersionString', '?')}{date}"
 
@@ -634,7 +634,7 @@ def load_config() -> Config:
 def main() -> None:
     setup_logging()
     log.info("starting Click2Whoosh")
-    first_run = not CONFIG_PATH.exists()  # apre la finestra di benvenuto
+    first_run = not CONFIG_PATH.exists()  # opens the welcome window
     config = load_config()
     dispatcher = Dispatcher(config)
     bridge = ClickBridge(dispatcher, config)

@@ -1,8 +1,8 @@
-"""Finestra di benvenuto (onboarding.html): permessi, collegamento di Click e MyWhoosh, cosa fanno tasti e menu.
+"""Welcome window (onboarding.html): permissions, connecting the Click and MyWhoosh, what the buttons and menu do.
 
-Si apre da sola al primo avvio e poi dal menu ("Guida introduttiva…"). Al primo avvio
-Bluetooth e annuncio sulla rete partono solo quando si preme "Consenti" (o alla chiusura
-della finestra), così le richieste di macOS compaiono una alla volta, spiegate.
+It opens by itself on first launch and then from the menu ("Getting Started…"). On first launch
+Bluetooth and the network announcement start only when "Allow" is pressed (or when the
+window is closed), so the macOS requests appear one at a time, explained.
 """
 
 import ctypes
@@ -26,15 +26,15 @@ PRIVACY_PANES = {"bluetooth": "Bluetooth", "network": "LocalNetwork", "accessibi
 
 
 def bluetooth_permission() -> str:
-    """"ok", "ask" (macOS non l'ha ancora chiesto) o "denied". Leggerlo non fa comparire la richiesta."""
+    """"ok", "ask" (macOS has not asked yet) or "denied". Reading it does not make the request appear."""
     state = CBManager.authorization()
     if state == CBManagerAuthorizationAllowedAlways:
         return "ok"
     return "ask" if state == CBManagerAuthorizationNotDetermined else "denied"
 
 
-# Accessibilità: AXIsProcessTrusted legge lo stato aggiornato. CGPreflightPostEventAccess no:
-# ricorda la prima risposta finché l'app non si riavvia, e la spunta non diventava mai verde.
+# Accessibility: AXIsProcessTrusted reads the up-to-date state. CGPreflightPostEventAccess does not:
+# it remembers the first answer until the app restarts, and the checkmark never turned green.
 _ax = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")
 _ax.AXIsProcessTrusted.restype = ctypes.c_bool
 _ax.AXIsProcessTrustedWithOptions.restype = ctypes.c_bool
@@ -46,15 +46,15 @@ def accessibility_allowed() -> bool:
 
 
 def ask_accessibility() -> None:
-    """macOS aggiunge Click2Whoosh all'elenco Accessibilità e propone di aprire le Impostazioni."""
+    """macOS adds Click2Whoosh to the Accessibility list and offers to open the Settings."""
     options = NSDictionary.dictionaryWithObject_forKey_(True, "AXTrustedCheckOptionPrompt")
     _ax.AXIsProcessTrustedWithOptions(objc.pyobjc_id(options))
 
 
 class _NetworkProbe(NSObject):
-    """Cerca il nostro annuncio Bonjour: se lo trova, il permesso Rete locale c'è.
+    """Looks for our Bonjour announcement: if it finds it, the Local Network permission is there.
 
-    macOS non dice se il permesso è stato dato; senza, la ricerca semplicemente non trova niente.
+    macOS does not say whether the permission was granted; without it, the search simply finds nothing.
     """
 
     def init(self):
@@ -89,7 +89,7 @@ class OnboardingWindow(WebWindow):
         self.probe = _NetworkProbe.alloc().init()
 
     def show(self) -> None:
-        self.probe.start()  # se il permesso c'è già, la spunta compare subito
+        self.probe.start()  # if the permission is already there, the checkmark shows right away
         super().show()
         self.push_status()
 
@@ -101,17 +101,17 @@ class OnboardingWindow(WebWindow):
     def status(self) -> dict:
         return {**self.get_status(),
                 "permissions": {"bluetooth": bluetooth_permission(),
-                                # trovato l'annuncio, e non quello di un'altra copia di Click2Whoosh
+                                # announcement found, and not the one of another copy of Click2Whoosh
                                 "network": "ok" if self.probe.found and self.advertising() else "ask",
                                 "accessibility": "ok" if accessibility_allowed() else "ask"}}
 
     def push_status(self) -> None:
-        """Ogni secondo, dal thread principale."""
+        """Every second, from the main thread."""
         if self.visible:
             self.call("c2wStatus", self.status())
 
     def pressed(self, name: str, is_pressed: bool) -> None:
-        """Dal thread del Bluetooth: il tasto resta illuminato sul disegno finché è premuto."""
+        """From the Bluetooth thread: the button stays lit on the drawing while it is pressed."""
         def light() -> None:
             if self.visible:
                 self._eval(f"window.c2wPressed && window.c2wPressed({json.dumps(name)}, {json.dumps(is_pressed)})")
@@ -138,6 +138,6 @@ class OnboardingWindow(WebWindow):
             self.close()
 
     def closed(self) -> None:
-        # Chiusa prima di dare i permessi: si parte comunque, macOS li chiederà da solo.
+        # Closed before granting the permissions: we start anyway, macOS will ask by itself.
         self.start_bluetooth()
         self.start_network()

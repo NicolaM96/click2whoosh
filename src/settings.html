@@ -25,7 +25,7 @@ h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
 select, input[type=number] { font: inherit; width: 100%; padding: 4px 6px; }
 input[type=number] { width: 90px; }
 .adv input[type=checkbox] { justify-self: start; margin-left: 2px; }
-/* sempre una riga: l'altezza dei riquadri non deve cambiare col testo dell'avviso */
+/* always one line: the height of the boxes must not change with the hint text */
 .hint { color: var(--muted); font-size: 12px; height: 18px; margin-top: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card.advanced { margin-top: 18px; padding: 12px 16px; }
@@ -137,7 +137,7 @@ function renderButton() {
 }
 
 function renderStatus() {
-  const s = state.status;  // lo stato dei Click arriva come codice (vedi STATUS_TEXT)
+  const s = state.status;  // the Clicks' status comes as a code (see STATUS_TEXT)
   const clicks = [...(s.click_left != null ? [["left", s.click_left]] : []), ["right", s.click]];
   document.getElementById("chips").innerHTML = clicks.map(([side, st]) => {
     const battery = s.batteries[side] != null ? batteryHtml(s.batteries[side]) : "";
@@ -169,7 +169,7 @@ window.c2wStatus = (status) => {
 
 window.c2wPressed = (name, pressed, select) => {
   lightKey(name, pressed);
-  // Si illumina sempre; diventa il tasto selezionato solo se la finestra è in primo piano.
+  // It always lights up; it becomes the selected button only if the window is in front.
   if (pressed && select && name !== selected) { selected = name; renderButton(); }
 };
 

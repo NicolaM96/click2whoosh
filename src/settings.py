@@ -1,7 +1,7 @@
-"""Finestra Impostazioni: una pagina HTML (settings.html) in una finestra WebKit nativa (webwindow.py).
+"""Settings window: an HTML page (settings.html) in a native WebKit window (webwindow.py).
 
-Python chiama le funzioni c2wUpdate / c2wStatus / c2wPressed / c2wSaved della pagina. Ogni
-modifica viene scritta subito in config.toml e applicata al programma in esecuzione.
+Python calls the page's c2wUpdate / c2wStatus / c2wPressed / c2wSaved functions. Every
+change is written to config.toml right away and applied to the running program.
 """
 
 import json
@@ -82,8 +82,8 @@ def apply_button_change(raw: dict, name: str, field: str, value: str) -> None:
 
 
 def switch_default_buttons(raw: dict, left: bool) -> bool:
-    """Attivando o spegnendo il Click sinistro: se i tasti sono ancora quelli di default
-    dell'altra modalità, passa a quelli della nuova. Se li hai cambiati non tocca niente."""
+    """When the left Click is turned on or off: if the buttons are still the defaults of
+    the other mode, they switch to the new ones. If you changed them nothing is touched."""
     old, new = DEFAULT_BUTTONS[not left], DEFAULT_BUTTONS[left]
     general = raw.setdefault("general", {})
     if (raw.get("buttons", {}) != old["buttons"]
@@ -95,8 +95,8 @@ def switch_default_buttons(raw: dict, left: bool) -> bool:
 
 
 def update_default_buttons(path: Path) -> None:
-    """All'avvio: una configurazione mai personalizzata ma coi tasti dell'altra modalità (es. creata
-    quando il sinistro non era attivo di default) passa ai tasti giusti. Le altre restano come sono."""
+    """At startup: a configuration never customized but with the other mode's buttons (e.g. created
+    when the left Click was not on by default) switches to the right buttons. Others stay as they are."""
     with path.open("rb") as f:
         raw = tomllib.load(f)
     left = raw.get("general", {}).get("use_left_side", True)
@@ -116,7 +116,7 @@ def button_state(raw: dict, name: str) -> dict:
 
 
 def button_summary(raw: dict, left: bool = False) -> list[dict]:
-    """Cosa fanno i tasti, a parole, per la finestra di benvenuto: il destro e, se usato, il sinistro."""
+    """What the buttons do, in words, for the welcome window: the right Click and, if used, the left one."""
     summary = []
     for name in SIDE_BUTTONS[SIDE_RIGHT] + (SIDE_BUTTONS[SIDE_LEFT] if left else ()):
         state = button_state(raw, name)
@@ -128,12 +128,12 @@ def button_summary(raw: dict, left: bool = False) -> list[dict]:
     return summary
 
 
-# ---------------------------------------------------------------- finestra
+# ---------------------------------------------------------------- window
 
 class SettingsWindow(WebWindow):
-    """Va creata e usata sul thread principale; pressed() e push_status() si possono
-    chiamare da qualunque thread. Con la finestra in primo piano (focused) i tasti del
-    Click selezionano soltanto."""
+    """Must be created and used on the main thread; pressed() and push_status() can be
+    called from any thread. With the window in front (focused) the Click's buttons
+    only select."""
 
     def __init__(self, config_path: Path, get_status: Callable[[], dict],
                  on_saved: Callable[[set], None], current_config: Callable[[], object]):
@@ -150,20 +150,20 @@ class SettingsWindow(WebWindow):
     def on_ready(self) -> None:
         self.push_state()
 
-    # ---- da Python alla pagina
+    # ---- from Python to the page
 
     def push_state(self) -> None:
-        """Stato completo (rilegge config.toml): all'apertura e dopo un salvataggio."""
+        """Full state (re-reads config.toml): on opening and after a save."""
         if self.visible:
             self.call("c2wUpdate", self.state())
 
     def push_status(self) -> None:
-        """Solo lo stato di Click e MyWhoosh, ogni secondo: niente letture da disco. Thread principale."""
+        """Only the Click and MyWhoosh status, every second: no disk reads. Main thread."""
         if self.visible:
             self.call("c2wStatus", self.get_status())
 
     def pressed(self, name: str, is_pressed: bool) -> None:
-        """Chiamata dal thread del Bluetooth: la finestra si tocca solo dal thread principale."""
+        """Called from the Bluetooth thread: the window is only touched from the main thread."""
         def show() -> None:
             if self.visible:
                 args = ", ".join(json.dumps(a) for a in (name, is_pressed, self.focused))
@@ -190,7 +190,7 @@ class SettingsWindow(WebWindow):
             "status": self.get_status(),
         }
 
-    # ---- dalla pagina a Python
+    # ---- from the page to Python
 
     def read_raw(self) -> dict:
         with self.config_path.open("rb") as f:
@@ -206,7 +206,7 @@ class SettingsWindow(WebWindow):
                 changed = set()
             else:
                 key, value = str(message["key"]), message["value"]
-                # Dalla pagina arrivano numeri (millisecondi, percentuale) o caselle sì/no.
+                # From the page come numbers (milliseconds, percentage) or yes/no checkboxes.
                 value = bool(value) if key in ("use_left_side", "shift_sound") else int(value)
                 raw.setdefault("general", {})[key] = value
                 changed = {key}
@@ -219,7 +219,7 @@ class SettingsWindow(WebWindow):
         self.config_path.write_text(dump_config(raw), encoding="utf-8")
         try:
             self.on_saved(changed)
-        except Exception as e:  # configurazione rifiutata: si torna a quella di prima
+        except Exception as e:  # configuration rejected: go back to the previous one
             log.error("invalid setting: %s", e)
             self.config_path.write_text(old_text, encoding="utf-8")
             self._eval(f"alert({json.dumps(_('Invalid setting: {error}').format(error=e))})")

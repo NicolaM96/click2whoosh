@@ -1,9 +1,9 @@
 .venv/
 __pycache__/
 .DS_Store
-# cattura Bluetooth: contiene tutto il traffico della sessione, non va distribuita
+# Bluetooth capture: holds all the traffic of the session, must not be shared
 *.pklg
-# note di lavoro private (la parte tecnica è in docs/HOW-IT-WORKS.md)
+# private working notes (the technical part is in docs/HOW-IT-WORKS.md)
 HANDOFF.md
 # generati da packaging/build.sh
 packaging/Click2Whoosh.icns
@@ -11,7 +11,7 @@ packaging/build/
 packaging/dist/
 # impostazioni locali di Claude Code
 .claude/
-# avvio con doppio clic, solo per uso personale
+# double-click launcher, for personal use only
 avvia.command
 
 # translations: the .mo files are compiled from the .po files by packaging/build.sh

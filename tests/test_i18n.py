@@ -9,6 +9,7 @@ import io
 import re
 import sys
 import tempfile
+import tokenize
 import unittest
 from pathlib import Path
 
@@ -113,6 +114,20 @@ class NoLeftoverItalianTest(unittest.TestCase):
                 if isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
                     with self.subTest(file=path.name, line=node.lineno):
                         self.assertIsNone(ITALIAN_LETTERS.search(node.value), node.value)
+
+    def test_no_italian_in_python_comments(self):
+        for path in sorted((ROOT / "src").glob("*.py")) + sorted((ROOT / "tests").glob("*.py")):
+            with path.open(encoding="utf-8") as f:
+                for token in tokenize.generate_tokens(f.readline):
+                    if token.type == tokenize.COMMENT:
+                        with self.subTest(file=path.name, line=token.start[0]):
+                            self.assertIsNone(ITALIAN_LETTERS.search(token.string), token.string)
+
+    def test_no_italian_in_page_comments(self):
+        for path in sorted((ROOT / "src").glob("*.html")):
+            with self.subTest(file=path.name):
+                comments = " ".join(match.group(0) for match in COMMENTS.finditer(path.read_text(encoding="utf-8")))
+                self.assertIsNone(ITALIAN_LETTERS.search(comments))
 
     def test_english_pages_have_no_italian(self):
         import webwindow

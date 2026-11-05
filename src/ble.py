@@ -1,13 +1,13 @@
-"""Connessione Bluetooth allo Zwift Click v2 e decodifica dei tasti.
+"""Bluetooth connection to the Zwift Click v2 and decoding of the buttons.
 
-Protocollo ricavato dalle parti pubbliche di OpenBikeControl/bikecontrol:
-- il Click v2 annuncia il servizio 0xFC82 e i dati produttore 0x094A (Zwift),
-  col primo byte che dice il lato: 0x0A destro, 0x0B sinistro
-- handshake: si scrive "RideOn" sulla caratteristica sync RX
-- ogni messaggio inizia con un opcode; 0x23 = stato dei tasti (protobuf
-  RideKeyPadStatus, campo 1 = bitmask, bit a 0 = tasto premuto)
-- il sinistro inoltra anche tasti e batteria del destro: ogni lato tiene solo i suoi tasti,
-  e la batteria si legge dalla caratteristica standard 0x2A19 di ciascun Click
+Protocol derived from the public parts of OpenBikeControl/bikecontrol:
+- the Click v2 advertises service 0xFC82 and manufacturer data 0x094A (Zwift),
+  with the first byte telling the side: 0x0A right, 0x0B left
+- handshake: "RideOn" is written to the sync RX characteristic
+- every message starts with an opcode; 0x23 = button state (protobuf
+  RideKeyPadStatus, field 1 = bitmask, bit at 0 = button pressed)
+- the left Click also forwards the right one's buttons and battery: each side keeps only its own
+  buttons, and the battery is read from each Click's standard characteristic 0x2A19
 """
 
 import asyncio
@@ -22,8 +22,8 @@ from bleak.backends.scanner import AdvertisementData
 from bleak.exc import BleakBluetoothNotAvailableError, BleakBluetoothNotAvailableReason
 
 log = logging.getLogger("click2whoosh")
-# wake_sequence() riattiva le notifiche direttamente su CoreBluetooth: bleak non se lo aspetta
-# e lo segnala a ogni ciclo. È innocuo, quindi quel messaggio si nasconde.
+# wake_sequence() re-enables notifications directly on CoreBluetooth: bleak does not expect it
+# and reports it on every cycle. It is harmless, so that message is hidden.
 logging.getLogger("bleak.backends.corebluetooth.PeripheralDelegate").addFilter(
     lambda record: "didUpdateNotificationStateForCharacteristic" not in record.getMessage())
 
@@ -31,12 +31,12 @@ ZWIFT_MANUFACTURER_ID = 0x094A
 RIDE_SERVICE_UUID = "0000fc82-0000-1000-8000-00805f9b34fb"
 BATTERY_LEVEL_UUID = "00002a19-0000-1000-8000-00805f9b34fb"
 FIRMWARE_UUID = "00002a26-0000-1000-8000-00805f9b34fb"
-# Il firmware con cui è stato provato tutto: un aggiornamento può cambiare il protocollo.
+# The firmware everything was tested with: an update may change the protocol.
 TESTED_FIRMWARE = "1.1.0"
-# Caratteristiche usate per tenere sveglio il Click senza riavviarlo. Sequenza osservata
-# catturando con PacketLogger il traffico tra BikeControl e il Click (firmware 1.1.0):
-# ogni 55 s, sulla stessa connessione, notifiche riattivate su 0100 e 0102, poi
-# 0102 <- 01 (risposta 01 f0 00), 0100 <- WAKE_MESSAGE (risposta 00), 0102 <- 03 (risposta 12 00 ...).
+# Characteristics used to keep the Click awake without restarting it. Sequence observed by
+# capturing with PacketLogger the traffic between BikeControl and the Click (firmware 1.1.0):
+# every 55 s, on the same connection, notifications re-enabled on 0100 and 0102, then
+# 0102 <- 01 (reply 01 f0 00), 0100 <- WAKE_MESSAGE (reply 00), 0102 <- 03 (reply 12 00 ...).
 WAKE_CHAR_UUID = "00000100-19ca-4651-86e5-fa29dcdd09d1"
 WAKE_CONTROL_UUID = "00000102-19ca-4651-86e5-fa29dcdd09d1"
 WAKE_MESSAGE = bytes.fromhex("3d b8 f3 96 00 00 00 00 00 01 00 00 00 b0 03 00 00 00")
@@ -45,7 +45,7 @@ SYNC_RX_CHAR_UUID = "00000003-19ca-4651-86e5-fa29dcdd09d1"
 SYNC_TX_CHAR_UUID = "00000004-19ca-4651-86e5-fa29dcdd09d1"
 
 RIDE_ON = b"RideOn"
-UNLOCKED_HELLO = bytes([0xFF, 0x04, 0x00])  # saluto che BikeControl manda al sinistro dopo RideOn
+UNLOCKED_HELLO = bytes([0xFF, 0x04, 0x00])  # greeting BikeControl sends to the left Click after RideOn
 
 OPCODE_RESET = 0x18
 OPCODE_CONTROLLER = 0x23
@@ -64,26 +64,26 @@ STATUS_BLUETOOTH_OFF = "bluetooth_off"
 STATUS_BLUETOOTH_DENIED = "bluetooth_denied"
 STATUS_BLUETOOTH_UNAVAILABLE = "bluetooth_unavailable"
 
-# I tasti: nome (come in config.toml) -> (come si chiama nel menu e nella finestra, bit nella bitmask).
+# The buttons: name (as in config.toml) -> (how it is called in the menu and the window, bit in the bitmask).
 BUTTONS = {
-    "plus": ("+", 0x01000),  # Click destro
+    "plus": ("+", 0x01000),  # right Click
     "y": ("Y", 0x00040),
     "z": ("Z", 0x00080),
     "a": ("A", 0x00010),
     "b": ("B", 0x00020),
-    "minus": ("−", 0x00100),  # Click sinistro
+    "minus": ("−", 0x00100),  # left Click
     "nav_up": ("↑", 0x00002),
     "nav_down": ("↓", 0x00008),
     "nav_left": ("←", 0x00001),
     "nav_right": ("→", 0x00004),
 }
-# I tasti di ciascun Click, nell'ordine in cui li elencano le finestre.
+# The buttons of each Click, in the order the windows list them.
 SIDE_BUTTONS = {SIDE_RIGHT: ("plus", "y", "z", "a", "b"),
                 SIDE_LEFT: ("minus", "nav_up", "nav_down", "nav_left", "nav_right")}
 BUTTON_LABELS = {name: label for name, (label, _) in BUTTONS.items()}
 BUTTON_MASKS = {name: mask for name, (_, mask) in BUTTONS.items()}
 ALL_RELEASED = 0xFFFFFFFF
-# Riserva se un firmware non accettasse più la sequenza "wake": riavvio prima del minuto.
+# Fallback if a firmware stopped accepting the "wake" sequence: restart before the minute is up.
 RESET_AFTER_S = 55
 
 
@@ -99,7 +99,7 @@ def read_varint(data: bytes, pos: int) -> tuple[int, int]:
 
 
 def parse_protobuf(data: bytes) -> dict[int, int]:
-    """Estrae i soli campi varint di primo livello di un messaggio protobuf."""
+    """Extracts only the top-level varint fields of a protobuf message."""
     fields: dict[int, int] = {}
     pos = 0
     while pos < len(data):
@@ -120,7 +120,7 @@ def parse_protobuf(data: bytes) -> dict[int, int]:
 
 
 def pressed_buttons(payload: bytes) -> set[str]:
-    """Tasti premuti in un messaggio RideKeyPadStatus (senza l'opcode)."""
+    """Buttons pressed in a RideKeyPadStatus message (without the opcode)."""
     button_map = parse_protobuf(payload).get(1, ALL_RELEASED)
     return {name for name, mask in BUTTON_MASKS.items() if not button_map & mask}
 
@@ -134,17 +134,17 @@ def click_side(adv: AdvertisementData) -> int | None:
 
 @dataclass
 class ClickEvents:
-    """Callback chiamate dalla connessione. Tutte opzionali."""
+    """Callbacks called by the connection. All optional."""
 
     on_press: Callable[[str], None] = lambda name: None
     on_release: Callable[[str], None] = lambda name: None
     on_battery: Callable[[str, int], None] = lambda side, level: None
     on_firmware: Callable[[str, str], None] = lambda side, version: None
     on_status: Callable[[str, str], None] = lambda side, status: None
-    # Se False non lo si tiene sveglio: si spegne da solo (o lo si fa spegnere), risparmiando la pila.
+    # If False we don't keep it awake: it switches itself off (or we make it), saving the battery.
     keep_awake_allowed: Callable[[], bool] = lambda: True
-    # Se False (es. MyWhoosh chiuso) il Click si cerca solo ogni tanto: il Mac consuma meno,
-    # e premendo un tasto il Click si collega comunque dopo qualche secondo.
+    # If False (e.g. MyWhoosh closed) the Click is only searched for now and then: the Mac uses less,
+    # and when a button is pressed the Click connects anyway after a few seconds.
     search_often: Callable[[], bool] = lambda: True
 
 
@@ -158,21 +158,21 @@ BLUETOOTH_PROBLEMS = {
 
 @dataclass
 class ClickSide:
-    """Un Click v2 (destro o sinistro): lo cerca, si collega e si ricollega da solo."""
+    """One Click v2 (right or left): searches for it, connects and reconnects by itself."""
 
     side: int
     events: ClickEvents
-    # "wake": sequenza che lo tiene acceso ~15 minuti. "reset": riavvio prima del minuto (riserva).
+    # "wake": sequence that keeps it on for ~15 minutes. "reset": restart before the minute is up (fallback).
     keepalive: str | None = None
-    keepalive_interval: float = 300.0  # secondi tra un rinnovo e l'altro
+    keepalive_interval: float = 300.0  # seconds between one renewal and the next
     pressed: set[str] = field(default_factory=set)
     last_message: float = 0.0
     device: BLEDevice | None = None
     just_reset: bool = False
-    firmware: str = ""  # letto al collegamento, per il registro
-    client: BleakClient | None = None  # la connessione in corso, per power_off()
-    # Dopo power_off() il Click riavviato si fa vedere per qualche secondo: non lo si cerca
-    # finché non si è addormentato davvero, altrimenti lo si ricollegherebbe per niente.
+    firmware: str = ""  # read on connection, for the log
+    client: BleakClient | None = None  # the current connection, for power_off()
+    # After power_off() the restarted Click shows up for a few seconds: we don't search for it
+    # until it has really fallen asleep, otherwise we would reconnect for nothing.
     rest_until: float = 0.0
 
     @property
@@ -203,7 +203,7 @@ class ClickSide:
         if data[0] != OPCODE_CONTROLLER:
             return
         try:
-            # Solo i tasti di questo Click: quelli dell'altro arrivano già dalla sua connessione.
+            # Only this Click's buttons: the other one's already arrive from its own connection.
             self.update_buttons(pressed_buttons(data[1:]) & set(SIDE_BUTTONS[self.side]))
         except (IndexError, ValueError) as e:
             log.warning("[%s] message not decoded %s: %s", self.name, data.hex(" "), e)
@@ -216,14 +216,14 @@ class ClickSide:
         self.pressed = now
 
     async def keep_awake(self, client: BleakClient) -> None:
-        """Evita che il Click si spenga dopo 60 s, finché serve (vedi ClickEvents.keep_awake_allowed).
+        """Keeps the Click from switching off after 60 s, for as long as needed (see ClickEvents.keep_awake_allowed).
 
-        "wake": la sequenza di wake_sequence() lo tiene acceso ~15 minuti e la si rinnova
-        ogni keepalive_interval secondi, senza disconnetterlo.
-        "reset": riserva per un firmware che non accettasse la sequenza. Lo si riavvia prima
-        che scada il minuto (3-4 s in cui i tasti non arrivano); dopo un riavvio i tasti non
-        rimandano lo spegnimento, quindi lo si fa entro keepalive_interval secondi dal
-        collegamento, scegliendo se possibile un momento senza tasti premuti.
+        "wake": the wake_sequence() sequence keeps it on for ~15 minutes and is renewed
+        every keepalive_interval seconds, without disconnecting it.
+        "reset": fallback for a firmware that did not accept the sequence. It is restarted before
+        the minute is up (3-4 s during which buttons do not arrive); after a restart buttons do not
+        postpone the switch-off, so it is done within keepalive_interval seconds of
+        connecting, choosing if possible a moment with no buttons pressed.
         """
         if self.keepalive == "wake":
             wake = client.services.get_characteristic(WAKE_CHAR_UUID)
@@ -232,8 +232,8 @@ class ClickSide:
                 log.warning("[%s] wake characteristics not found: using the reset instead", self.name)
                 self.keepalive, self.keepalive_interval = "reset", RESET_AFTER_S
                 return await self.keep_awake(client)
-            # Appena collegato: se ora non serve tenerlo sveglio, si aspetta comunque fino a
-            # poco prima del minuto, perché un tasto premuto (es. per la musica) può cambiare idea.
+            # Just connected: if there is no need to keep it awake now, we still wait until
+            # just before the minute is up, because a pressed button (e.g. for music) may change things.
             waited = 0.0
             while not self.events.keep_awake_allowed():
                 if waited == 0:
@@ -245,20 +245,20 @@ class ClickSide:
                 waited += 2
             while True:
                 await self.wake_sequence(client, wake, control)
-                # Tra un ciclo e l'altro si controlla spesso se serve ancora (es. MyWhoosh chiuso).
+                # Between one cycle and the next we check often whether it is still needed (e.g. MyWhoosh closed).
                 waited = 0.0
                 while waited < self.keepalive_interval:
                     await asyncio.sleep(5)
                     waited += 5
                     if not self.events.keep_awake_allowed():
-                        # Ogni ciclo lo tiene acceso ~15 minuti: lo si azzera per farlo spegnere subito.
+                        # Each cycle keeps it on for ~15 minutes: we reset it to make it switch off right away.
                         await self.power_off("no need to keep it awake")
                         return
 
         if self.keepalive == "reset":
             connected_at = time.monotonic()
-            # Ogni riavvio consuma pila: lo si fa il più tardi possibile, anticipandolo al massimo
-            # di quiet_window secondi per non capitare mentre si stanno premendo tasti.
+            # Each restart uses battery: we do it as late as possible, anticipating it by at most
+            # quiet_window seconds so it doesn't happen while buttons are being pressed.
             quiet_window = 6
             while True:
                 await asyncio.sleep(0.5)
@@ -292,12 +292,12 @@ class ClickSide:
         self.events.on_firmware(self.name, version)
 
     async def wake_sequence(self, client: BleakClient, wake, control) -> None:
-        """La sequenza che tiene acceso il Click per altri ~15 minuti (944 s)."""
+        """The sequence that keeps the Click on for another ~15 minutes (944 s)."""
         step = "re-enabling notifications"
         try:
             for characteristic in (wake, control):
-                # BikeControl riattiva le notifiche a ogni ciclo; bleak non lo permette se sono
-                # già attive, quindi si chiede direttamente a CoreBluetooth.
+                # BikeControl re-enables notifications on every cycle; bleak doesn't allow it if they are
+                # already active, so we ask CoreBluetooth directly.
                 delegate = getattr(getattr(client, "_backend", None), "_delegate", None)
                 if delegate is not None:
                     delegate.peripheral.setNotifyValue_forCharacteristic_(True, characteristic.obj)
@@ -311,7 +311,7 @@ class ClickSide:
             step = "writing 03"
             await client.write_gatt_char(control, b"\x03", response=False)
         except Exception as e:
-            # Il firmware (se noto) aiuta a capire se una versione nuova ha cambiato la sequenza.
+            # The firmware (if known) helps tell whether a new version changed the sequence.
             log.warning("[%s] wake sequence failed at step '%s' (firmware %s): %s",
                         self.name, step, self.firmware or "?", e)
             raise
@@ -319,11 +319,11 @@ class ClickSide:
         await self.read_battery(client)
 
     async def power_off(self, reason: str) -> None:
-        """Fa spegnere il Click il prima possibile. Si riaccende premendo un tasto.
+        """Makes the Click switch off as soon as possible. It turns back on when a button is pressed.
 
-        Il comando POWER_OFF del protocollo Zwift qui risponde NOT_SUPPORTED, quindi si usa
-        RESET: azzera i ~15 minuti concessi dall'ultima wake_sequence, e senza un nuovo ciclo
-        il Click si spegne da solo dopo circa un minuto.
+        The Zwift protocol's POWER_OFF command answers NOT_SUPPORTED here, so RESET is used:
+        it zeroes the ~15 minutes granted by the last wake_sequence, and without a new cycle
+        the Click switches itself off after about a minute.
         """
         client = self.client
         if client is None or not client.is_connected:
@@ -336,11 +336,11 @@ class ClickSide:
             log.info("[%s] switching off failed: %s", self.name, e)
 
     async def run_once(self) -> bool:
-        """Una ricerca e, se trovato, una connessione fino alla disconnessione. True se si è collegato."""
+        """One search and, if found, one connection until disconnection. True if it connected."""
         if self.just_reset and self.device:
-            # Dopo un nostro RESET ci si ricollega direttamente, senza cercarlo:
-            # macOS aspetta che il Click torni a farsi vedere. Se non va, la
-            # volta dopo si cerca normalmente.
+            # After our own RESET we reconnect directly, without searching:
+            # macOS waits for the Click to show up again. If that fails, the
+            # next time we search normally.
             self.just_reset = False
             device = self.device
             self.events.on_status(self.name, STATUS_RESTARTING)
@@ -350,7 +350,7 @@ class ClickSide:
             device = await self.find(timeout=10 if often else 8)
             if device is None:
                 if not often:
-                    await asyncio.sleep(4)  # ricerca leggera: 8 s di ricerca, 4 di pausa
+                    await asyncio.sleep(4)  # light search: 8 s of searching, 4 of pause
                 return False
             self.device = device
 
@@ -358,7 +358,7 @@ class ClickSide:
             await self.connect_and_listen(device)
             return True
         finally:
-            # Qualunque sia il motivo della chiusura: niente tasti rimasti "premuti" (es. sterzo).
+            # Whatever the reason for closing: no buttons left "pressed" (e.g. steering).
             self.client = None
             self.update_buttons(set())
 
@@ -382,8 +382,8 @@ class ClickSide:
                 await client.write_gatt_char(SYNC_RX_CHAR_UUID, UNLOCKED_HELLO, response=False)
             self.last_message = time.monotonic()
             self.events.on_status(self.name, STATUS_CONNECTED)
-            # La batteria si legge al collegamento e a ogni ciclo per tenerlo sveglio
-            # (vedi wake_sequence), più gli aggiornamenti che il Click manda da sé.
+            # The battery is read on connection and on every keep-awake cycle
+            # (see wake_sequence), plus the updates the Click sends by itself.
             await self.read_battery(client)
             await self.read_firmware(client)
             try:
@@ -422,7 +422,7 @@ class ClickSide:
                 self.events.on_status(self.name, problem)
                 await asyncio.sleep(5)
                 continue
-            except Exception as e:  # BLE su macOS fallisce in molti modi diversi
+            except Exception as e:  # BLE on macOS fails in many different ways
                 log.warning("[%s] error: %s", self.name, e)
             if connected and not self.just_reset:
                 self.events.on_status(self.name, STATUS_DISCONNECTED)

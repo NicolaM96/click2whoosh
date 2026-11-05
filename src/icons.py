@@ -1,8 +1,8 @@
-"""Icone per la barra dei menu: il logo (menubar.svg), simboli di sistema Apple (SF Symbols) e pallini.
+"""Icons for the menu bar: the logo (menubar.svg), Apple system symbols (SF Symbols) and dots.
 
-I simboli "template" sono monocromatici e macOS li colora da solo per barra chiara o scura.
-Vengono ridisegnati in un'immagine normale: nei menu di rumps le immagini-simbolo così
-come arrivano da macOS non comparivano.
+"Template" symbols are monochrome and macOS tints them for a light or dark bar.
+They are redrawn into a normal image: in rumps menus, symbol images as they
+come from macOS did not show up.
 """
 
 from pathlib import Path
@@ -15,9 +15,9 @@ _cache: dict = {}
 
 
 def logo(height: float = 17) -> NSImage | None:
-    """Il ciclista del logo in un solo colore: macOS lo fa nero o bianco secondo la barra.
+    """The logo cyclist in a single color: macOS makes it black or white depending on the bar.
 
-    NSImage legge gli SVG da macOS 14; prima si ripiega sulla bicicletta di sistema.
+    NSImage reads SVGs from macOS 14; before that it falls back to the system bicycle.
     """
     key = ("logo", height)
     if key not in _cache:
@@ -51,7 +51,7 @@ def symbol(name: str, size: float = 14, template: bool = True) -> NSImage | None
 
 
 def gray_dot(size: float = 9) -> NSImage:
-    """Pallino grigio: Click non collegato (collegato si vede l'icona della batteria)."""
+    """Gray dot: Click not connected (when connected the battery icon is shown)."""
     key = ("dot", size)
     if key not in _cache:
         image = NSImage.alloc().initWithSize_((size, size))
