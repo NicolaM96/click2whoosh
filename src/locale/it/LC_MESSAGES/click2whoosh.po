@@ -54,12 +54,6 @@ msgstr "Sterza a sinistra"
 msgid "Steer right"
 msgstr "Sterza a destra"
 
-msgid "Steer left + Left (forks, experimental)"
-msgstr "Sterza a sinistra + Sinistra (bivi, da provare)"
-
-msgid "Steer right + Right (forks, experimental)"
-msgstr "Sterza a destra + Destra (bivi, da provare)"
-
 msgid "Play/pause"
 msgstr "Play/pausa"
 

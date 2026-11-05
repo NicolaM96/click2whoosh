@@ -13,7 +13,7 @@ from typing import Callable
 
 from PyObjCTools import AppHelper
 
-from actions import DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, action_choices, describe, repeatable
+from actions import DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, REMOVED_ACTIONS, action_choices, describe, repeatable
 from ble import BUTTON_LABELS, SIDE_BUTTONS, SIDE_LEFT, SIDE_RIGHT
 from i18n import _
 from webwindow import WebWindow
@@ -100,9 +100,24 @@ def update_default_buttons(path: Path) -> None:
     with path.open("rb") as f:
         raw = tomllib.load(f)
     left = raw.get("general", {}).get("use_left_side", True)
+    changed = replace_removed_actions(raw)
     if switch_default_buttons(raw, left):
-        path.write_text(dump_config(raw), encoding="utf-8")
+        changed = True
         log.info("buttons updated to the defaults for %s", "both Clicks" if left else "the right Click only")
+    if changed:
+        path.write_text(dump_config(raw), encoding="utf-8")
+
+
+def replace_removed_actions(raw: dict) -> bool:
+    """Actions that no longer exist (the experimental fork ones) become the plain steering."""
+    changed = False
+    for section in ("buttons", "long_press", "double_press"):
+        table = raw.get(section, {})
+        for name, spec in table.items():
+            if spec in REMOVED_ACTIONS:
+                table[name] = REMOVED_ACTIONS[spec]
+                changed = True
+    return changed
 
 
 def button_state(raw: dict, name: str) -> dict:

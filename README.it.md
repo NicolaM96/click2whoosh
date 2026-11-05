@@ -34,6 +34,8 @@ L'interfaccia è in italiano e in inglese, secondo la lingua del Mac. Altre ling
 
 Col solo Click destro: **+** marcia su, **B** marcia giù, **Z/A** sterzo, **Y** musica.
 
+**Bivi**: in MyWhoosh si sceglie Track A/B solo col mouse; né il Click né la tastiera possono farlo (provato).
+
 ## Installazione
 1. Scarica `Click2Whoosh.dmg` dalla pagina **Releases** e trascina l'app in Applicazioni.
 2. L'app non è notarizzata da Apple: al primo avvio apri Impostazioni di Sistema → Privacy e sicurezza → **Apri comunque**.

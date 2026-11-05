@@ -3,7 +3,6 @@
 Formats accepted in config.toml:
     "obc:shift_up"     OpenBikeControl command sent to MyWhoosh over the network (see obc.BUTTONS);
                        gears and steering fall back to the keyboard if MyWhoosh is not connected
-    "obc:steer_left+left"  several commands in the same message: MyWhoosh uses what it needs
     "key:k"            presses and releases a key right away (shift, emote)
     "hold:a"           holds the key down for as long as the button is held (steering)
     "media:playpause"  media keys: playpause, next, previous, volup, voldown
@@ -61,9 +60,6 @@ def action_choices() -> list[tuple[str, str, str]]:
         (my_whoosh, "obc:shift_down", _("Shift down")),
         (my_whoosh, "obc:steer_left", _("Steer left")),
         (my_whoosh, "obc:steer_right", _("Steer right")),
-        # Left/right together with steering: to try, for choosing the road at forks.
-        (my_whoosh, "obc:steer_left+left", _("Steer left + Left (forks, experimental)")),
-        (my_whoosh, "obc:steer_right+right", _("Steer right + Right (forks, experimental)")),
         (music, "media:playpause", _("Play/pause")),
         (music, "media:next", _("Next track")),
         (music, "media:previous", _("Previous track")),
@@ -75,7 +71,9 @@ def action_choices() -> list[tuple[str, str, str]]:
           for n, name in enumerate(emote_names(), start=1)),
     ]
 # Actions that stay active while the button is held: no double click or long press.
-HELD_ACTIONS = {"obc:steer_left", "obc:steer_right", "obc:steer_left+left", "obc:steer_right+right"}
+HELD_ACTIONS = {"obc:steer_left", "obc:steer_right"}
+# Removed actions (MyWhoosh lets you choose at forks only with the mouse) and what replaces them.
+REMOVED_ACTIONS = {"obc:steer_left+left": "obc:steer_left", "obc:steer_right+right": "obc:steer_right"}
 # Default buttons, depending on the Clicks in use (key: whether the left one is used too).
 # With the right Click only it does everything; with both, as in Zwift: − and + shift, arrows steer.
 # "repeat": buttons that repeat the click while held (e.g. several shifts in a row).

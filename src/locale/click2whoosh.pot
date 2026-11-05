@@ -53,12 +53,6 @@ msgstr ""
 msgid "Steer right"
 msgstr ""
 
-msgid "Steer left + Left (forks, experimental)"
-msgstr ""
-
-msgid "Steer right + Right (forks, experimental)"
-msgstr ""
-
 msgid "Play/pause"
 msgstr ""
 

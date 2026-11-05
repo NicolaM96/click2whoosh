@@ -4,7 +4,6 @@
 #   "obc:shift_up"     command sent to MyWhoosh over the network (OpenBikeControl): shift_up, shift_down,
 #                      steer_left, steer_right. MyWhoosh ignores the protocol's other commands.
 #                      If MyWhoosh is not connected over the network, gears and steering use the keyboard.
-#   "obc:steer_left+left"  several commands in the same message
 #   "key:k"            presses and releases a key (only with MyWhoosh in front)
 #   "hold:a"           holds the key down for as long as you hold the button
 #   "media:playpause"  also: next, previous, volup, voldown

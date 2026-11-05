@@ -34,6 +34,8 @@ The interface is in English and Italian, following your Mac's language. More lan
 
 With the right Click only: **+** shift up, **B** shift down, **Z/A** steer, **Y** music.
 
+**Forks in the road**: MyWhoosh lets you choose Track A/B only with the mouse; neither the Click nor the keyboard can do it (tried).
+
 ## Install
 1. Download `Click2Whoosh.dmg` from **Releases** and drag the app to Applications.
 2. The app is not notarized by Apple: on first launch open System Settings → Privacy & Security → **Open Anyway**.

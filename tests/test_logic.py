@@ -549,6 +549,19 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(app.Config(path).buttons["y"].spec, "media:next")
             self.assertEqual(app.Config(path).buttons["nav_up"].spec, DEFAULT_BUTTONS[False]["buttons"]["nav_up"])
 
+    def test_removed_fork_actions_become_plain_steering(self):
+        import settings
+        raw = self.raw()
+        raw["buttons"]["nav_left"] = "obc:steer_left+left"
+        raw["buttons"]["nav_right"] = "obc:steer_right+right"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "config.toml"
+            path.write_text(settings.dump_config(raw))
+            settings.update_default_buttons(path)
+            config = app.Config(path)
+            self.assertEqual(config.buttons["nav_left"].spec, "obc:steer_left")
+            self.assertEqual(config.buttons["nav_right"].spec, "obc:steer_right")
+
     def test_volume_repeats(self):
         from actions import repeatable
         self.assertTrue(repeatable("media:volup"))
