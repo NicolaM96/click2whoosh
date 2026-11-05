@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impostazioni</title>
+<!-- comune -->
+<style>
+body { padding: 20px 22px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.off { color: var(--off); background: var(--off-bg); }
+.layout { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.card.click { display: flex; flex-direction: column; justify-content: center; }
+svg .btn { cursor: pointer; }
+svg .btn:hover circle, svg .btn:hover rect { stroke: var(--accent); }
+svg .btn.selected circle, svg .btn.selected rect { stroke: var(--accent); stroke-width: 3; fill: var(--accent-bg); }
+svg .btn.color.selected circle { stroke: var(--accent); stroke-width: 3.5; }
+h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 14px; }
+.row { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 10px; margin-bottom: 10px; }
+.row label { color: var(--muted); }
+select, input[type=number] { font: inherit; width: 100%; padding: 4px 6px; }
+input[type=number] { width: 90px; }
+.adv input[type=checkbox] { justify-self: start; margin-left: 2px; }
+/* sempre una riga: l'altezza dei riquadri non deve cambiare col testo dell'avviso */
+.hint { color: var(--muted); font-size: 12px; height: 18px; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.advanced { margin-top: 18px; padding: 12px 16px; }
+summary { cursor: pointer; color: var(--muted); font-weight: 500; }
+.adv { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 10px 16px;
+  align-items: center; margin-top: 12px; }
+.adv .note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
+.adv .actions { grid-column: 1 / -1; }
+.footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: var(--muted); font-size: 12px; }
+.saved { opacity: 0; transition: opacity .3s; color: var(--ok); }
+.saved.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="chips" id="chips"></div>
+
+<div class="layout">
+  <div class="card click">
+    <div class="pucks" id="pucks"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="title">Tasto +</h2>
+    <p class="sub">Scegli il tasto sul disegno, oppure premilo sul Click: finché questa finestra è in primo piano, i tasti selezionano soltanto.</p>
+    <div class="row"><label for="single">Clic</label><select id="single"></select></div>
+    <div class="row"><label for="double">Doppio clic</label><select id="double"></select></div>
+    <div class="row"><label for="long">Tenuto premuto</label><select id="long"></select></div>
+    <div class="hint" id="hint"></div>
+    <div class="footer"><span></span><span class="saved" id="saved">Salvato</span></div>
+  </div>
+</div>
+
+<div class="card advanced">
+  <details>
+    <summary>Avanzate</summary>
+    <div class="adv">
+      <span>Pressione lunga dopo (ms)</span><input type="number" min="200" max="3000" step="50" data-key="long_press_ms">
+      <span>Tempo per il doppio clic (ms)</span><input type="number" min="100" max="1000" step="25" data-key="double_press_ms">
+      <span>Avviso batteria sotto (%)</span><input type="number" min="0" max="100" step="5" data-key="battery_warning">
+      <span>Suono a ogni cambio marcia</span><input type="checkbox" data-key="shift_sound">
+      <span>Usa anche il Click sinistro</span><input type="checkbox" data-key="use_left_side">
+      <span></span><span></span>
+      <span class="note">Se non hai cambiato i tasti, passano da soli a quelli adatti (con i due Click: marce su + e −, sterzo sulle frecce). Il collegamento del sinistro vale dal prossimo avvio.</span>
+      <div class="actions"><button id="open-file">Apri file di configurazione</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+document.getElementById("pucks").innerHTML = ["left", "right"].map(side =>
+  `<div id="${side}-puck">${puck(side, 170)}<div class="puck-label">${SIDE_NAMES[side]}</div></div>`).join("");
+
+let state = null;
+let selected = "plus";
+
+function optionsHtml(current, { allowHeld, extra }) {
+  let html = `<option value="none">Niente</option>`;
+  for (const [value, label] of extra || []) html += `<option value="${value}">${label}</option>`;
+  const groups = {};
+  for (const a of state.actions) {
+    if (!allowHeld && a.held) continue;
+    (groups[a.group] ||= []).push(a);
+  }
+  for (const [group, actions] of Object.entries(groups)) {
+    html += `<optgroup label="${group}">`;
+    for (const a of actions) html += `<option value="${a.spec}">${a.label}</option>`;
+    html += `</optgroup>`;
+  }
+  if (current && current !== "none" && current !== "repeat" && !state.actions.some(a => a.spec === current)) {
+    html += `<option value="${current}">${current}</option>`;
+  }
+  return html;
+}
+
+function renderButton() {
+  const b = state.buttons[selected];
+  document.getElementById("title").textContent = `Tasto ${state.labels[selected]}`;
+  const single = document.getElementById("single");
+  const double = document.getElementById("double");
+  const long = document.getElementById("long");
+  const held = b.held;
+  const canRepeat = b.repeatable;
+
+  single.innerHTML = optionsHtml(b.single, { allowHeld: true });
+  double.innerHTML = optionsHtml(b.double, { allowHeld: false });
+  long.innerHTML = optionsHtml(b.long, { allowHeld: false, extra: canRepeat ? [["repeat", "Ripeti il clic"]] : [] });
+  single.value = b.single; double.value = b.double; long.value = b.long;
+  double.disabled = long.disabled = held;
+
+  let hint = "";
+  if (held) hint = "Attivo finché tieni premuto: niente doppio clic né pressione lunga.";
+  else if (b.double !== "none") hint = "Col doppio clic, il clic singolo parte con un attimo di ritardo.";
+  else if (b.long !== "none" && b.long !== "repeat") hint = "Con la pressione lunga, il clic parte quando rilasci.";
+  const hintEl = document.getElementById("hint");
+  hintEl.textContent = hint;
+  hintEl.title = hint;
+
+  document.querySelectorAll(".btn").forEach(el => el.classList.toggle("selected", el.dataset.name === selected));
+}
+
+function renderStatus() {
+  const s = state.status;  // lo stato dei Click arriva già a parole
+  const clicks = [...(s.click_left != null ? [["sinistro", s.click_left]] : []), ["destro", s.click]];
+  document.getElementById("chips").innerHTML = clicks.map(([side, st]) => {
+    const battery = s.batteries[side] != null ? batteryHtml(s.batteries[side]) : "";
+    return `<span class="chip ${st === "collegato" ? "ok" : "off"}">Click ${side} ${st}${battery}</span>`;
+  }).join("");
+}
+
+function renderGeneral() {
+  document.querySelectorAll("[data-key]").forEach(el => {
+    const v = state.general[el.dataset.key];
+    if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+  });
+  document.getElementById("left-puck").hidden = !state.general.use_left_side;
+  if (!state.general.use_left_side && !(selected in { plus: 1, y: 1, z: 1, a: 1, b: 1 })) selected = "plus";
+}
+
+window.c2wUpdate = (newState) => {
+  state = newState;
+  renderGeneral(); renderButton(); renderStatus();
+  requestAnimationFrame(reportHeight);
+};
+
+window.c2wStatus = (status) => {
+  if (!state) return;
+  state.status = status;
+  renderStatus();
+};
+
+window.c2wPressed = (name, pressed, select) => {
+  lightKey(name, pressed);
+  // Si illumina sempre; diventa il tasto selezionato solo se la finestra è in primo piano.
+  if (pressed && select && name !== selected) { selected = name; renderButton(); }
+};
+
+window.c2wSaved = () => {
+  const el = document.getElementById("saved");
+  el.classList.add("show");
+  clearTimeout(window._savedTimer);
+  window._savedTimer = setTimeout(() => el.classList.remove("show"), 1200);
+};
+
+document.querySelectorAll(".btn").forEach(el => el.addEventListener("click", () => {
+  selected = el.dataset.name; renderButton();
+}));
+for (const field of ["single", "double", "long"]) {
+  document.getElementById(field).addEventListener("change", e =>
+    send({ type: "button", name: selected, field, value: e.target.value }));
+}
+document.querySelectorAll("[data-key]").forEach(el => el.addEventListener("change", () => {
+  const value = el.type === "checkbox" ? el.checked : Number(el.value);
+  send({ type: "general", key: el.dataset.key, value });
+}));
+document.getElementById("open-file").addEventListener("click", () => send({ type: "open_file" }));
+document.querySelector("details").addEventListener("toggle", () => requestAnimationFrame(reportHeight));
+send({ type: "ready" });
+</script>
+</body>
+</html>

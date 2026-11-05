@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.DS_Store
+# cattura Bluetooth: contiene tutto il traffico della sessione, non va distribuita
+*.pklg
+# note di lavoro private (la parte tecnica è in docs/HOW-IT-WORKS.md)
+HANDOFF.md
+# generati da packaging/build.sh
+packaging/Click2Whoosh.icns
+packaging/build/
+packaging/dist/
+# impostazioni locali di Claude Code
+.claude/

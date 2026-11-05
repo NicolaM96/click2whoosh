@@ -1,0 +1,226 @@
+"""Finestra Impostazioni: una pagina HTML (settings.html) in una finestra WebKit nativa (webwindow.py).
+
+Python chiama le funzioni c2wUpdate / c2wStatus / c2wPressed / c2wSaved della pagina. Ogni
+modifica viene scritta subito in config.toml e applicata al programma in esecuzione.
+"""
+
+import json
+import logging
+import subprocess
+import tomllib
+from pathlib import Path
+from typing import Callable
+
+from PyObjCTools import AppHelper
+
+from actions import ACTION_CHOICES, DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, describe, repeatable
+from ble import BUTTON_LABELS, SIDE_BUTTONS, SIDE_LEFT, SIDE_RIGHT
+from webwindow import WebWindow
+
+log = logging.getLogger("click2whoosh")
+HTML_PATH = Path(__file__).with_name("settings.html")
+
+
+# ---------------------------------------------------------------- config.toml
+
+def toml_value(value) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(int(value)) if float(value).is_integer() else str(value)
+    if isinstance(value, list):
+        return "[" + ", ".join(toml_value(v) for v in value) + "]"
+    return json.dumps(str(value), ensure_ascii=False)
+
+
+def dump_config(raw: dict) -> str:
+    lines = ["# Configurazione di Click2Whoosh, scritta dalla finestra Impostazioni.",
+             "# Si può modificare anche a mano: le azioni possibili sono descritte nel README.", ""]
+    for section in ("general", "buttons", "long_press", "double_press"):
+        lines.append(f"[{section}]")
+        for key, value in raw.get(section, {}).items():
+            lines.append(f"{key} = {toml_value(value)}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def apply_button_change(raw: dict, name: str, field: str, value: str) -> None:
+    buttons = raw.setdefault("buttons", {})
+    long_press = raw.setdefault("long_press", {})
+    double_press = raw.setdefault("double_press", {})
+    repeat = raw.setdefault("general", {}).setdefault("repeat_buttons", list(DEFAULT_REPEAT_BUTTONS))
+
+    def set_repeat(on: bool) -> None:
+        if on and name not in repeat:
+            repeat.append(name)
+        elif not on and name in repeat:
+            repeat.remove(name)
+
+    if field == "single":
+        buttons[name] = value
+        if value in HELD_ACTIONS:
+            long_press.pop(name, None)
+            double_press.pop(name, None)
+        if not repeatable(value):
+            set_repeat(False)
+    elif field == "double":
+        if value == "none":
+            double_press.pop(name, None)
+        else:
+            double_press[name] = value
+    elif field == "long":
+        if value == "repeat":
+            long_press.pop(name, None)
+            set_repeat(True)
+        else:
+            set_repeat(False)
+            if value == "none":
+                long_press.pop(name, None)
+            else:
+                long_press[name] = value
+
+
+def switch_default_buttons(raw: dict, left: bool) -> bool:
+    """Attivando o spegnendo il Click sinistro: se i tasti sono ancora quelli di default
+    dell'altra modalità, passa a quelli della nuova. Se li hai cambiati non tocca niente."""
+    old, new = DEFAULT_BUTTONS[not left], DEFAULT_BUTTONS[left]
+    general = raw.setdefault("general", {})
+    if (raw.get("buttons", {}) != old["buttons"]
+            or set(general.get("repeat_buttons", DEFAULT_REPEAT_BUTTONS)) != set(old["repeat"])):
+        return False
+    raw["buttons"] = dict(new["buttons"])
+    general["repeat_buttons"] = list(new["repeat"])
+    return True
+
+
+def update_default_buttons(path: Path) -> None:
+    """All'avvio: una configurazione mai personalizzata ma coi tasti dell'altra modalità (es. creata
+    quando il sinistro non era attivo di default) passa ai tasti giusti. Le altre restano come sono."""
+    with path.open("rb") as f:
+        raw = tomllib.load(f)
+    left = raw.get("general", {}).get("use_left_side", True)
+    if switch_default_buttons(raw, left):
+        path.write_text(dump_config(raw), encoding="utf-8")
+        log.info("tasti aggiornati ai default per %s", "i due Click" if left else "il solo destro")
+
+
+def button_state(raw: dict, name: str) -> dict:
+    single = raw.get("buttons", {}).get(name, "none")
+    long_spec = raw.get("long_press", {}).get(name)
+    repeat = name in raw.get("general", {}).get("repeat_buttons", DEFAULT_REPEAT_BUTTONS)
+    if long_spec is None:
+        long_spec = "repeat" if repeat and repeatable(single) else "none"
+    return {"single": single, "double": raw.get("double_press", {}).get(name, "none"), "long": long_spec,
+            "repeatable": repeatable(single), "held": single in HELD_ACTIONS}
+
+
+def button_summary(raw: dict, left: bool = False) -> list[dict]:
+    """Cosa fanno i tasti, a parole, per la finestra di benvenuto: il destro e, se usato, il sinistro."""
+    summary = []
+    for name in SIDE_BUTTONS[SIDE_RIGHT] + (SIDE_BUTTONS[SIDE_LEFT] if left else ()):
+        state = button_state(raw, name)
+        extra = {"none": "", "repeat": "si ripete"}
+        summary.append({"name": name, "label": BUTTON_LABELS[name], "single": describe(state["single"]),
+                        "double": extra.get(state["double"], describe(state["double"])),
+                        "long": extra.get(state["long"], describe(state["long"])), "held": state["held"],
+                        "side": "left" if name in SIDE_BUTTONS[SIDE_LEFT] else "right"})
+    return summary
+
+
+# ---------------------------------------------------------------- finestra
+
+class SettingsWindow(WebWindow):
+    """Va creata e usata sul thread principale; pressed() e push_status() si possono
+    chiamare da qualunque thread. Con la finestra in primo piano (focused) i tasti del
+    Click selezionano soltanto."""
+
+    def __init__(self, config_path: Path, get_status: Callable[[], dict],
+                 on_saved: Callable[[set], None], current_config: Callable[[], object]):
+        super().__init__("Click2Whoosh – Impostazioni", HTML_PATH, 860)
+        self.config_path = config_path
+        self.get_status = get_status
+        self.on_saved = on_saved
+        self.current_config = current_config
+
+    def show(self) -> None:
+        self.push_state()
+        super().show()
+
+    def on_ready(self) -> None:
+        self.push_state()
+
+    # ---- da Python alla pagina
+
+    def push_state(self) -> None:
+        """Stato completo (rilegge config.toml): all'apertura e dopo un salvataggio."""
+        if self.visible:
+            self.call("c2wUpdate", self.state())
+
+    def push_status(self) -> None:
+        """Solo lo stato di Click e MyWhoosh, ogni secondo: niente letture da disco. Thread principale."""
+        if self.visible:
+            self.call("c2wStatus", self.get_status())
+
+    def pressed(self, name: str, is_pressed: bool) -> None:
+        """Chiamata dal thread del Bluetooth: la finestra si tocca solo dal thread principale."""
+        def show() -> None:
+            if self.visible:
+                args = ", ".join(json.dumps(a) for a in (name, is_pressed, self.focused))
+                self._eval(f"window.c2wPressed && window.c2wPressed({args})")
+        AppHelper.callAfter(show)
+
+    def state(self) -> dict:
+        raw = self.read_raw()
+        config = self.current_config()
+        general = {
+            "use_left_side": config.use_left_side,
+            "long_press_ms": round(config.long_press_s * 1000),
+            "double_press_ms": round(config.double_window_s * 1000),
+            "battery_warning": config.battery_warning,
+            "shift_sound": config.shift_sound,
+        }
+        actions = [{"group": group, "spec": spec, "label": label, "held": spec in HELD_ACTIONS}
+                   for group, spec, label in ACTION_CHOICES]
+        return {
+            "buttons": {name: button_state(raw, name) for name in BUTTON_LABELS},
+            "labels": BUTTON_LABELS,
+            "actions": actions,
+            "general": general,
+            "status": self.get_status(),
+        }
+
+    # ---- dalla pagina a Python
+
+    def read_raw(self) -> dict:
+        with self.config_path.open("rb") as f:
+            return tomllib.load(f)
+
+    def on_message(self, kind: str, message: dict) -> None:
+        if kind == "open_file":
+            subprocess.Popen(["open", "-t", str(self.config_path)])
+        elif kind in ("button", "general"):
+            raw = self.read_raw()
+            if kind == "button":
+                apply_button_change(raw, str(message["name"]), str(message["field"]), str(message["value"]))
+                changed = set()
+            else:
+                key, value = str(message["key"]), message["value"]
+                # Dalla pagina arrivano numeri (millisecondi, percentuale) o caselle sì/no.
+                value = bool(value) if key in ("use_left_side", "shift_sound") else int(value)
+                raw.setdefault("general", {})[key] = value
+                changed = {key}
+                if key == "use_left_side" and switch_default_buttons(raw, value):
+                    log.info("tasti riportati ai default per %s", "i due Click" if value else "il solo destro")
+            self.save(raw, changed)
+
+    def save(self, raw: dict, changed: set) -> None:
+        old_text = self.config_path.read_text(encoding="utf-8")
+        self.config_path.write_text(dump_config(raw), encoding="utf-8")
+        try:
+            self.on_saved(changed)
+        except Exception as e:  # configurazione rifiutata: si torna a quella di prima
+            log.error("impostazione non valida: %s", e)
+            self.config_path.write_text(old_text, encoding="utf-8")
+            self._eval(f"alert({json.dumps(f'Impostazione non valida: {e}')})")
+        self.push_state()
+        self.call("c2wSaved")

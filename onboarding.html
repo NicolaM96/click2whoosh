@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benvenuto</title>
+<!-- comune -->
+<style>
+body { padding: 22px 26px 18px; }
+.page { min-height: 410px; display: none; flex-direction: column; }
+.page.on { display: flex; }
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+.lead { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+b { font-weight: 600; }
+
+/* righe con stato: permessi, riepilogo */
+.rows { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 16px;
+  background: var(--accent-bg); }
+.row .what b { display: block; }
+.row .what span { color: var(--muted); font-size: 12px; }
+.tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+.tag.ok { color: var(--ok); background: var(--ok-bg); }
+.tag.off { color: var(--off); background: var(--off-bg); }
+.tag.bad { color: var(--bad); background: var(--bad-bg); }
+.help { grid-column: 2 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
+button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 5px 16px; }
+
+/* disegno del Click */
+.click-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
+.big { font-size: 16px; font-weight: 600; margin: 4px 0; }
+.puck-label.ok { color: var(--ok); }
+.sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 18px; }
+.side { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+.side.stacked { grid-template-columns: minmax(0, 1fr); align-content: start; align-items: start; justify-items: center; gap: 10px; }
+.side.stacked .keys { justify-self: stretch; }
+
+/* passi numerati */
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* tasti */
+.keys { display: grid; gap: 8px; }
+.key { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; }
+.badge { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  font-weight: 600; font-size: 12px; background: #3a3a3c; }
+.badge.y { background: var(--key-y); } .badge.z { background: var(--key-z); }
+.badge.a { background: var(--key-a); } .badge.b { background: var(--key-b); }
+.key div span { color: var(--muted); font-size: 12px; display: block; }
+
+dl { margin: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 14px; }
+dt { font-weight: 600; }
+dd { margin: 0; color: var(--muted); }
+
+/* barra in fondo */
+.nav { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+.dots { display: flex; gap: 6px; }
+.dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--off-bg); }
+.dots span.on { background: var(--accent); }
+.nav .buttons { display: flex; gap: 8px; }
+label.check { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<section class="page on" data-page="welcome">
+  <h1>Benvenuto in Click2Whoosh</h1>
+  <p class="lead">Con Click2Whoosh lo Zwift Click v2 comanda MyWhoosh sul Mac: marce, sterzo e musica, senza abbonamenti.</p>
+  <div class="card rows">
+    <div class="row"><div class="icon">🔐</div><div class="what"><b>Permessi</b><span>Tre autorizzazioni di macOS, una alla volta.</span></div><span></span></div>
+    <div class="row"><div class="icon">🎮</div><div class="what"><b>Collegamenti</b><span>Il Click via Bluetooth, MyWhoosh via rete.</span></div><span></span></div>
+    <div class="row"><div class="icon">💡</div><div class="what"><b>Come si usa</b><span>Cosa fanno i tasti, il menu e le impostazioni.</span></div><span></span></div>
+  </div>
+  <p class="muted small" style="margin-top:14px">Bastano un paio di minuti. Puoi rivedere questa guida quando vuoi dal menu del ciclista in alto: "Guida introduttiva…".</p>
+</section>
+
+<section class="page" data-page="permissions">
+  <h1>Permessi</h1>
+  <p class="lead">Premi "Consenti" su ogni riga: macOS apre una sua finestra, rispondi "Consenti" anche lì.</p>
+  <div class="card rows">
+    <div class="row" data-perm="bluetooth"><div class="icon">📶</div>
+      <div class="what"><b>Bluetooth</b><span>Per collegarsi al Click e leggere i tasti.</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+    <div class="row" data-perm="network"><div class="icon">🌐</div>
+      <div class="what"><b>Rete locale</b><span>Perché MyWhoosh trovi Click2Whoosh e riceva marce e sterzo.</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+    <div class="row" data-perm="accessibility"><div class="icon">⌨️</div>
+      <div class="what"><b>Accessibilità</b><span>Per i tasti della musica e, se MyWhoosh non è collegato in rete, per premere i suoi tasti al posto tuo.</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+  </div>
+</section>
+
+<section class="page" data-page="click">
+  <h1>Collega il Click</h1>
+  <p class="lead" id="click-lead"></p>
+  <div class="card click-wrap">
+    <div class="pucks" id="click-pucks"></div>
+    <div>
+      <div class="big" id="click-state"></div>
+      <div class="muted" id="click-detail"></div>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-page="mywhoosh">
+  <h1>Collega MyWhoosh</h1>
+  <p class="lead">Da fare una volta sola: poi MyWhoosh si ricollega da solo.</p>
+  <div class="card">
+    <ol class="steps">
+      <li>Se usavi BikeControl, chiudilo.</li>
+      <li>Apri MyWhoosh e vai nella schermata <b>Connessioni</b>.</li>
+      <li>Clicca l'icona <b>OpenBikeControl</b> in alto a destra.</li>
+      <li>Scegli <b>Click2Whoosh</b>. MyWhoosh chiede in inglese se collegarsi ("OpenBikeControl Instance Found"): premi <b>YES</b>.</li>
+    </ol>
+  </div>
+  <div class="card row" style="margin-top:12px"><div class="icon">🚴</div>
+    <div class="what"><b>MyWhoosh</b><span id="mw-detail"></span></div><span class="tag" id="mw-tag"></span></div>
+  <p class="muted small" style="margin-top:12px">Puoi farlo anche più tardi: Click2Whoosh resta in ascolto finché è aperto.</p>
+</section>
+
+<section class="page" data-page="keys">
+  <h1>I tasti</h1>
+  <p class="lead">Così sono impostati adesso. Un tasto può fare una cosa con un clic, un'altra con un doppio clic e un'altra ancora se lo tieni premuto.</p>
+  <div class="card sides" id="keys"></div>
+  <p class="muted small" style="margin-top:12px">Provali adesso: con questa finestra davanti i tasti si illuminano sul disegno e non mandano niente a MyWhoosh né alla musica.</p>
+  <p class="muted small">Per non consumare la pila, il Click si spegne da solo quando non lo usi e MyWhoosh è chiuso. Il primo tasto che premi lo riaccende (quel tasto va perso).</p>
+</section>
+
+<section class="page" data-page="menu">
+  <h1>Menu e impostazioni</h1>
+  <p class="lead">Click2Whoosh non ha finestre né icona nel Dock: lo trovi nella barra dei menu in alto a destra, col ciclista. L'icona è piena quando il Click è collegato e più chiara quando lo sta aspettando. Cliccala per aprire il menu.</p>
+  <div class="card">
+    <dl>
+      <dt>Impostazioni…</dt><dd>Per cambiare cosa fanno i tasti: scegli un tasto (cliccandolo sul disegno o premendolo sul Click) e decidi cosa fa con clic, doppio clic e tenuto premuto. Si salva da solo.</dd>
+      <dt>Avanzate</dt><dd>In fondo alle Impostazioni: quanto deve durare la pressione lunga, quanto velocemente fare il doppio clic, a che percentuale avvisare per la pila scarica, il suono a ogni cambio di marcia e l'uso del Click sinistro.</dd>
+      <dt>Avvia con il Mac</dt><dd>Click2Whoosh parte da solo all'accensione.</dd>
+      <dt>Guida introduttiva…</dt><dd>Riapre questa guida.</dd>
+      <dt>Apri registro</dt><dd>L'elenco di cosa è successo (collegamenti, tasti, errori): utile se qualcosa non va.</dd>
+      <dt>Esci</dt><dd>Chiude Click2Whoosh e fa spegnere il Click.</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="page" data-page="done">
+  <h1>Tutto pronto</h1>
+  <p class="lead" id="done-lead"></p>
+  <div class="card rows" id="summary"></div>
+  <label class="check" id="login-row" hidden><input type="checkbox" id="login"> Avvia Click2Whoosh con il Mac</label>
+</section>
+
+<div class="nav">
+  <div class="dots" id="dots"></div>
+  <div class="buttons">
+    <button id="back">Indietro</button>
+    <button id="settings" hidden>Apri Impostazioni</button>
+    <button id="next" class="primary">Iniziamo</button>
+  </div>
+</div>
+
+<script>
+const pages = [...document.querySelectorAll(".page")];
+let current = 0;
+let status = null;
+let asked = {};  // permessi per cui hai già premuto "Consenti"
+
+function $(id) { return document.getElementById(id); }
+
+function show(index) {
+  current = Math.max(0, Math.min(index, pages.length - 1));
+  pages.forEach((p, i) => p.classList.toggle("on", i === current));
+  $("dots").innerHTML = pages.map((_, i) => `<span class="${i === current ? "on" : ""}"></span>`).join("");
+  const last = current === pages.length - 1;
+  $("back").hidden = current === 0;
+  $("settings").hidden = !last;
+  $("next").textContent = current === 0 ? "Iniziamo" : last ? "Fine" : "Avanti";
+  render();
+  requestAnimationFrame(reportHeight);
+}
+
+// ---- permessi
+
+const PERM_HELP = {
+  bluetooth: {
+    denied: "Permesso negato: premi \"Apri Impostazioni\" e accendi l'interruttore di Click2Whoosh.",
+    off: "Il Bluetooth del Mac è spento: accendilo dal Centro di Controllo.",
+  },
+  network: {
+    asked: 'Rispondi "Consenti" nella finestra di macOS. Se avevi risposto di no: Impostazioni di Sistema → Privacy e sicurezza → Rete locale → attiva Click2Whoosh.',
+  },
+  accessibility: {
+    asked: "Nelle Impostazioni di Sistema, in Accessibilità, accendi l'interruttore di Click2Whoosh (se non c'è, aggiungilo con +) e torna qui. Se è già acceso ma la spunta resta grigia, toglilo con − e aggiungilo di nuovo.",
+  },
+};
+
+function permState(name) {
+  const p = status.permissions[name];
+  if (name === "bluetooth" && status.click === "Bluetooth spento") return "off";
+  return p === "ok" ? "ok" : p === "denied" ? "denied" : asked[name] ? "asked" : "ask";
+}
+
+function renderPermissions() {
+  for (const row of document.querySelectorAll("[data-perm]")) {
+    const name = row.dataset.perm;
+    const state = permState(name);
+    const action = row.querySelector(".action");
+    const key = `${name}:${state}`;
+    if (action.dataset.key !== key) {  // si ridisegna solo se cambia, per non perdere i clic
+      action.dataset.key = key;
+      action.innerHTML =
+        state === "ok" ? `<span class="tag ok">✓ Consentito</span>`
+        : state === "ask" ? `<button class="primary" data-allow="${name}">Consenti</button>`
+        : state === "off" ? `<span class="tag bad">Spento</span>`
+        : `<button data-open="${name}">Apri Impostazioni</button>`;
+    }
+    row.querySelector(".help").textContent = (PERM_HELP[name] || {})[state] || "";
+  }
+}
+
+document.addEventListener("click", e => {
+  const allow = e.target.dataset && e.target.dataset.allow;
+  const open = e.target.dataset && e.target.dataset.open;
+  if (allow) { asked[allow] = true; send({ type: "allow", what: allow }); render(); }
+  if (open) send({ type: "open_privacy", what: open });
+});
+
+// ---- resto delle pagine
+
+// I Click in uso con il loro stato: il sinistro solo se attivo nelle Impostazioni.
+function clicks() {
+  const used = status.click_left != null ? [["left", status.click_left]] : [];
+  return [...used, ["right", status.click]];
+}
+function clicksConnected() { return clicks().every(([, s]) => s === "collegato"); }
+function battery(side) { return status.batteries[SIDE_NAMES[side].toLowerCase()]; }  // solo se collegato
+
+function renderClick() {
+  const list = clicks();
+  const both = list.length > 1;
+  const sides = list.map(([side]) => side).join();
+  if ($("click-pucks").dataset.sides !== sides) {  // si ridisegna solo se cambia, per non spegnere i tasti illuminati
+    $("click-pucks").dataset.sides = sides;
+    $("click-pucks").innerHTML = list.map(([side]) =>
+      `<div>${puck(side, both ? 120 : 170)}${both ? `<div class="puck-label" data-label="${side}"></div>` : ""}</div>`).join("");
+  }
+  for (const [side, s] of list) {
+    const label = document.querySelector(`[data-label="${side}"]`);
+    if (!label) continue;
+    label.className = "puck-label" + (s === "collegato" ? " ok" : "");
+    const level = battery(side);
+    label.innerHTML = SIDE_NAMES[side] + (s === "collegato" ? " ✓" : "") + (level != null ? batteryHtml(level) : "");
+  }
+  $("click-lead").textContent = both
+    ? "Premi un tasto qualsiasi su ogni Click: si accende e si collega in qualche secondo."
+    : "Premi un tasto qualsiasi del Click: si accende e si collega in qualche secondo.";
+
+  const waiting = list.filter(([, s]) => s !== "collegato");
+  const connected = waiting.length === 0;
+  const someConnected = waiting.length < list.length;
+  const missing = both && waiting.length === 1 ? ` ${SIDE_NAMES[waiting[0][0]].toLowerCase()}` : "";
+  $("click-state").textContent = connected ? (both ? "✓ Click collegati" : "✓ Click collegato")
+    : someConnected ? `In attesa del Click${missing}…` : "In attesa del Click…";
+  const first = waiting.length ? waiting[0][1] : "collegato";
+  $("click-detail").textContent =
+    status.permissions.bluetooth !== "ok" ? "Prima consenti il Bluetooth (passo precedente)."
+    : connected ? (!both && battery("right") != null ? `Batteria ${battery("right")}%. ` : "") + "Premi i tasti: si illuminano sul disegno."
+    : someConnected ? `Premi un tasto anche sul Click${missing}.`
+    : first === "in attesa (premi un tasto)" ? "Il LED del Click lampeggia mentre si collega."
+    : first;
+}
+
+function renderMyWhoosh() {
+  $("mw-tag").className = "tag " + (status.mywhoosh ? "ok" : "off");
+  $("mw-tag").textContent = status.mywhoosh ? "✓ Collegato" : "In attesa";
+  $("mw-detail").textContent = status.mywhoosh ? "Marce e sterzo arrivano a MyWhoosh via rete."
+    : status.permissions.network !== "ok" ? "Serve il permesso Rete locale (passo Permessi)."
+    : "Segui i passi qui sopra in MyWhoosh.";
+}
+
+function renderSummary() {
+  const items = [
+    ["📶", "Bluetooth", status.permissions.bluetooth === "ok"],
+    ["🌐", "Rete locale", status.permissions.network === "ok"],
+    ["⌨️", "Accessibilità", status.permissions.accessibility === "ok"],
+    ["🎮", "Click", clicksConnected()],
+    ["🚴", "MyWhoosh", status.mywhoosh],
+  ];
+  $("summary").innerHTML = items.map(([icon, name, ok]) =>
+    `<div class="row"><div class="icon">${icon}</div><div class="what"><b>${name}</b></div>
+     <span class="tag ${ok ? "ok" : "off"}">${ok ? "✓ Pronto" : "Da fare"}</span></div>`).join("");
+  const missing = items.filter(i => !i[2]).length;
+  $("done-lead").textContent = missing === 0 ? "Buona pedalata! Se vuoi cambiare cosa fanno i tasti, apri le Impostazioni."
+    : "Quello che manca puoi farlo anche dopo: torna con Indietro, oppure riapri la guida dal menu del ciclista.";
+}
+
+function render() {
+  if (!status) return;
+  renderPermissions(); renderClick(); renderMyWhoosh(); renderSummary();
+}
+
+window.c2wInit = (info) => {
+  const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+  const key = b => {
+    const more = [b.held && "Dura finché lo tieni premuto",
+                  b.double && `Doppio clic: ${lower(b.double)}`,
+                  b.long && `Tenuto premuto: ${lower(b.long)}`].filter(Boolean);
+    return `<div class="key"><span class="badge ${b.name}">${b.label}</span>
+            <div><b>${b.single}</b>${more.map(m => `<span>${m}</span>`).join("")}</div></div>`;
+  };
+  const sides = ["left", "right"].filter(side => info.buttons.some(b => b.side === side));
+  const both = sides.length > 1;
+  $("keys").innerHTML = sides.map(side =>
+    `<div class="side${both ? " stacked" : ""}"><div>${puck(side, both ? 96 : 150)}${both ? `<div class="puck-label">${SIDE_NAMES[side]}</div>` : ""}</div>
+     <div class="keys">${info.buttons.filter(b => b.side === side).map(key).join("")}</div></div>`).join("");
+  $("login-row").hidden = !info.login_available;
+  $("login").checked = info.login_enabled;
+  requestAnimationFrame(reportHeight);
+};
+window.c2wStatus = (s) => { status = s; render(); };
+window.c2wPressed = lightKey;
+
+$("next").addEventListener("click", () => current === pages.length - 1 ? send({ type: "finish" }) : show(current + 1));
+$("back").addEventListener("click", () => show(current - 1));
+$("settings").addEventListener("click", () => send({ type: "open_settings" }));
+$("login").addEventListener("change", e => send({ type: "login", enabled: e.target.checked }));
+show(0);
+send({ type: "ready" });
+</script>
+</body>
+</html>

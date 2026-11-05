@@ -1,0 +1,92 @@
+<!-- Parti comuni a settings.html e onboarding.html: webwindow.py le inserisce al posto del segnaposto "comune". -->
+<style>
+:root {
+  --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.12);
+  --strong: rgba(0,0,0,.35); --accent: #0a84ff; --accent-bg: rgba(10,132,255,.12);
+  --ok: #248a3d; --ok-bg: rgba(52,199,89,.15); --bad: #d70015; --bad-bg: rgba(255,59,48,.12);
+  --off: #6e6e73; --off-bg: rgba(120,120,128,.14); --body: #fbfbfd;
+  --key-y: #3ba7f0; --key-z: #f7931e; --key-a: #4cc35a; --key-b: #ec4e9a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e; --card: #2a2a2c; --text: #f5f5f7; --muted: #a1a1a6; --line: rgba(255,255,255,.12);
+    --strong: rgba(255,255,255,.4); --accent-bg: rgba(10,132,255,.25); --ok: #30d158; --ok-bg: rgba(48,209,88,.18);
+    --bad: #ff453a; --bad-bg: rgba(255,69,58,.18); --off: #a1a1a6; --off-bg: rgba(120,120,128,.24); --body: #333336;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, sans-serif; -webkit-user-select: none; cursor: default; }
+.card { background: var(--card); border: 0.5px solid var(--line); border-radius: 12px; padding: 16px; }
+button { font: inherit; padding: 4px 12px; }
+
+/* disegno del Click: tasti premuti pieni; Y Z A B tengono il loro colore e cambiano il bordo */
+.pucks { display: flex; gap: 6px; }
+.puck-label { text-align: center; color: var(--muted); font-size: 12px; }
+.battery { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; white-space: nowrap; }
+svg .body { fill: var(--body); stroke: var(--strong); stroke-width: 1.2; }
+svg .pad { fill: var(--card); stroke: var(--line); }
+svg .btn circle, svg .btn rect { fill: var(--card); stroke: var(--strong); stroke-width: 1; transition: fill .08s; }
+svg .btn text { fill: var(--text); font-size: 14px; text-anchor: middle; pointer-events: none; }
+svg .btn.pressed circle, svg .btn.pressed rect { fill: var(--accent); }
+svg .btn.pressed text { fill: #fff; }
+svg .btn.color circle { stroke: rgba(0,0,0,.25); }
+svg .btn.color text { fill: #fff; font-weight: 600; }
+svg .btn[data-name=y] circle { fill: var(--key-y); }
+svg .btn[data-name=z] circle { fill: var(--key-z); }
+svg .btn[data-name=a] circle { fill: var(--key-a); }
+svg .btn[data-name=b] circle { fill: var(--key-b); }
+svg .btn.color.pressed circle { stroke: var(--text); stroke-width: 3.5; filter: brightness(1.25); }
+</style>
+<script>
+const SHAPE = `
+  <rect class="body" x="22" y="14" width="22" height="46" rx="8" transform="rotate(-45 33 37)"/>
+  <rect class="body" x="176" y="14" width="22" height="46" rx="8" transform="rotate(45 187 37)"/>
+  <rect class="body" x="22" y="152" width="22" height="46" rx="8" transform="rotate(45 33 175)"/>
+  <rect class="body" x="176" y="152" width="22" height="46" rx="8" transform="rotate(-45 187 175)"/>
+  <path class="body" d="M110 22 C160 22 188 58 188 104 C188 140 168 160 150 178 C140 188 140 196 138 210 C134 236 86 236 82 210 C80 196 80 188 70 178 C52 160 32 140 32 104 C32 58 60 22 110 22 Z"/>
+  <rect class="pad" x="72" y="66" width="76" height="76" rx="18" transform="rotate(45 110 104)"/>`;
+const KEYS = {
+  right: `
+  <g class="btn color" data-name="y"><circle cx="110" cy="66" r="15"/><text x="110" y="71">Y</text></g>
+  <g class="btn color" data-name="z"><circle cx="72" cy="104" r="15"/><text x="72" y="109">Z</text></g>
+  <g class="btn color" data-name="a"><circle cx="148" cy="104" r="15"/><text x="148" y="109">A</text></g>
+  <g class="btn color" data-name="b"><circle cx="110" cy="142" r="15"/><text x="110" y="147">B</text></g>
+  <g class="btn" data-name="plus"><rect x="93" y="181" width="34" height="34" rx="17"/><text x="110" y="203" style="font-size:20px">+</text></g>`,
+  left: `
+  <g class="btn" data-name="nav_up"><circle cx="110" cy="66" r="15"/><text x="110" y="71">↑</text></g>
+  <g class="btn" data-name="nav_left"><circle cx="72" cy="104" r="15"/><text x="72" y="109">←</text></g>
+  <g class="btn" data-name="nav_right"><circle cx="148" cy="104" r="15"/><text x="148" y="109">→</text></g>
+  <g class="btn" data-name="nav_down"><circle cx="110" cy="142" r="15"/><text x="110" y="147">↓</text></g>
+  <g class="btn" data-name="minus"><rect x="93" y="181" width="34" height="34" rx="17"/><text x="110" y="203" style="font-size:20px">−</text></g>`,
+};
+const SIDE_NAMES = { left: "Sinistro", right: "Destro" };
+
+// Il disegno di un Click: il sinistro (frecce e −) va a sinistra, come sul manubrio.
+function puck(side, width) {
+  return `<svg width="${width}" height="${Math.round(width * 260 / 220)}" viewBox="0 0 220 260">${SHAPE}${KEYS[side]}</svg>`;
+}
+
+function send(msg) { window.webkit.messageHandlers.c2w.postMessage(msg); }
+
+// La finestra si adatta all'altezza della pagina (vedi WebWindow.fit_height).
+let lastHeight = 0;
+function reportHeight() {
+  const height = Math.ceil(document.body.getBoundingClientRect().height);
+  if (height !== lastHeight) { lastHeight = height; send({ type: "size", height }); }
+}
+
+// Livello della batteria: icona (riempita in proporzione) e percentuale.
+function batteryHtml(level) {
+  const fill = Math.max(1, Math.round(level / 100 * 14));
+  return `<span class="battery"><svg width="20" height="10" viewBox="0 0 20 10" aria-hidden="true">
+    <rect x="0.5" y="0.5" width="17" height="9" rx="2" fill="none" stroke="currentColor" opacity=".6"/>
+    <rect x="18" y="3" width="1.5" height="4" rx=".75" fill="currentColor" opacity=".6"/>
+    <rect x="2" y="2" width="${fill}" height="6" rx="1" fill="currentColor"/></svg>${level}%</span>`;
+}
+
+// Tasto premuto sul Click vero: si illumina sul disegno.
+function lightKey(name, pressed) {
+  document.querySelectorAll(`.btn[data-name="${name}"]`).forEach(el => el.classList.toggle("pressed", pressed));
+}
+</script>

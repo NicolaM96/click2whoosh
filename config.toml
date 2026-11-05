@@ -1,0 +1,47 @@
+# Configurazione di Click2Whoosh. Più comodo dal menu: Impostazioni… (le modifiche fatte lì si applicano subito).
+#
+# Azioni possibili:
+#   "obc:shift_up"     comando mandato a MyWhoosh via rete (OpenBikeControl): shift_up, shift_down,
+#                      steer_left, steer_right. Altri comandi del protocollo MyWhoosh li ignora.
+#                      Se MyWhoosh non è collegato via rete, marce e sterzo usano la tastiera.
+#   "obc:steer_left+left"  più comandi nello stesso messaggio
+#   "key:k"            preme e rilascia un tasto (solo con MyWhoosh in primo piano)
+#   "hold:a"           tiene premuto il tasto finché tieni premuto il pulsante
+#   "media:playpause"  anche: next, previous, volup, voldown
+#   "screenshot"       screenshot del Mac sulla Scrivania
+#   "none"             niente
+#
+# Tasti di MyWhoosh: K marcia su, I marcia giù, A/D sterzo, U interfaccia minimale, 1-7 emote.
+
+[general]
+long_press_ms = 600          # oltre questa durata la pressione è "lunga"
+double_press_ms = 300        # entro questo tempo due clic sono un "doppio clic"
+battery_warning = 20         # avviso quando la batteria scende sotto questa percentuale
+shift_sound = true           # suono a ogni cambio marcia: "Tink" su, "Pop" giù (il Click v2 non vibra)
+use_left_side = true         # false per usare solo il Click destro
+repeat_buttons = ["plus", "minus", "nav_up", "nav_down"]  # tenendoli premuti l'azione si ripete
+
+# Clic singolo. Click destro: plus, a, b, y, z. Click sinistro: minus, nav_up, nav_down, nav_left, nav_right.
+# Con use_left_side = false i default sono: plus marcia su, b marcia giù, z/a sterzo, y musica.
+# Cambiando l'opzione dalle Impostazioni i tasti passano da soli all'altra serie, se non li hai cambiati.
+[buttons]
+plus = "obc:shift_up"        # marcia su
+minus = "obc:shift_down"     # marcia giù
+nav_left = "obc:steer_left"  # sterzo a sinistra (finché tieni premuto)
+nav_right = "obc:steer_right"  # sterzo a destra
+nav_up = "media:volup"       # volume su
+nav_down = "media:voldown"   # volume giù
+y = "media:playpause"        # play/pausa musica
+z = "key:u"                  # interfaccia minimale di MyWhoosh
+a = "key:2"                  # emote 2 di MyWhoosh (saluto)
+b = "screenshot"             # screenshot del Mac sulla Scrivania
+
+# Pressione lunga (opzionale): l'azione normale parte al rilascio.
+# Non metterci i tasti di cambio marcia (diventerebbero più lenti) né quelli di sterzo.
+[long_press]
+y = "media:previous"         # brano precedente
+
+# Doppio clic (opzionale): il clic singolo su quel tasto aspetta double_press_ms per sapere se ne arriva un secondo.
+# Stessa raccomandazione: non sui tasti di marcia e sterzo.
+[double_press]
+y = "media:next"             # brano successivo
