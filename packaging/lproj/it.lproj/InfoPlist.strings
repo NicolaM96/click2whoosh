@@ -1,0 +1,3 @@
+/* Testi che macOS mostra nelle richieste di permesso. */
+"NSBluetoothAlwaysUsageDescription" = "Click2Whoosh usa il Bluetooth per collegarsi allo Zwift Click e leggere i tasti.";
+"NSLocalNetworkUsageDescription" = "Click2Whoosh si annuncia sulla rete locale perché MyWhoosh possa collegarsi e ricevere marce e sterzo.";
