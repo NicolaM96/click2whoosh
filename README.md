@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/logo.png" width="128" alt="Click2Whoosh"></p>
+
 # Click2Whoosh
 
 **English** · [Italiano](README.it.md)
