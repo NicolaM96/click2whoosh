@@ -12,7 +12,7 @@ chiedendo proprio a lui. NSNetService va pubblicato da un thread con run loop (q
 principale dell'app); il server TCP gira invece nel loop asyncio del Bluetooth.
 
 Prova da terminale (senza Click, simula + e B ogni 3 secondi):
-    python obc.py --demo
+    python src/obc.py --demo
 """
 
 import argparse

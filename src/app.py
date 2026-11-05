@@ -1,7 +1,7 @@
 """click2whoosh: usa lo Zwift Click v2 con MyWhoosh su Mac.
 
 Avvio:
-    .venv/bin/python app.py
+    .venv/bin/python src/app.py
 
 Compare un'icona nella barra dei menu. Il Bluetooth gira in un thread a parte;
 la barra dei menu legge lo stato una volta al secondo.

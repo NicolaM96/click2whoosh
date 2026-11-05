@@ -27,4 +27,4 @@ if [[ ! -x .venv/bin/python ]]; then
   $PY -m venv .venv && .venv/bin/pip install -q -r requirements.txt || { read -k1 "?Installazione fallita. Premi un tasto."; exit 1; }
 fi
 
-exec .venv/bin/python app.py
+exec .venv/bin/python src/app.py

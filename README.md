@@ -47,19 +47,19 @@ Requires macOS 11 or later (tested on macOS 27, Click v2 firmware 1.1.0, MyWhoos
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python app.py                 # the app, with its menu bar icon
-.venv/bin/python app.py --senza-click   # menu, windows and network without Bluetooth
-.venv/bin/python ble.py --scan          # is the Click found?
-.venv/bin/python ble.py --debug --left  # print button presses
-.venv/bin/python obc.py --demo          # no Click: announce to MyWhoosh and simulate shifts
-.venv/bin/python -m unittest test_logic # tests, no hardware needed
-packaging/build.sh                      # Click2Whoosh.app and .dmg in packaging/dist
+.venv/bin/python src/app.py                 # the app, with its menu bar icon
+.venv/bin/python src/app.py --senza-click   # menu, windows and network without Bluetooth
+.venv/bin/python src/ble.py --scan          # is the Click found?
+.venv/bin/python src/ble.py --debug --left  # print button presses
+.venv/bin/python src/obc.py --demo          # no Click: announce to MyWhoosh and simulate shifts
+.venv/bin/python -m unittest discover tests # tests, no hardware needed
+packaging/build.sh                          # Click2Whoosh.app and .dmg in packaging/dist
 ```
 From Terminal, the Bluetooth and Accessibility permissions go to the Terminal app. `build.sh` signs the app
 with a keychain certificate named "Click2Whoosh" if present (Keychain Access → Certificate Assistant →
 Create a Certificate… → Self-Signed Root, Code Signing), so permissions survive rebuilds; otherwise ad-hoc.
 
-Configuration: `~/Library/Application Support/Click2Whoosh/config.toml` (template in `config.toml`).
+Configuration: `~/Library/Application Support/Click2Whoosh/config.toml` (template in `src/config.toml`).
 Log: `~/Library/Logs/Click2Whoosh/click2whoosh.log`, also from the menu.
 
 ## How it works

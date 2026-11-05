@@ -1,14 +1,18 @@
 """Test della logica che non ha bisogno del Click né di MyWhoosh.
 
-    .venv/bin/python -m unittest test_logic
+    .venv/bin/python -m unittest discover tests
 """
 
 import asyncio
+import sys
 import tempfile
 import time
 import unittest
 from pathlib import Path
 from unittest import mock
+
+# Il codice sta in src/: lo rende importabile da qui.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import app
 import obc

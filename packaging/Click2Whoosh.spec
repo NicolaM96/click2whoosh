@@ -2,7 +2,7 @@
 import time
 from pathlib import Path
 
-ROOT = Path(SPECPATH).parent
+ROOT = Path(SPECPATH).parent / "src"
 VERSION = "1.0"
 # Numero di build crescente: se sul Mac restano altre copie (nel Cestino, su un .dmg montato),
 # macOS considera "quella vera" la più recente invece di disattivare quella in Applicazioni.

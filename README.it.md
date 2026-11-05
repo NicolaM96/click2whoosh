@@ -47,20 +47,20 @@ Richiede macOS 11 o successivo (provata su macOS 27, Click v2 firmware 1.1.0, My
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python app.py                 # l'app, con icona nella barra dei menu
-.venv/bin/python app.py --senza-click   # menu, finestre e rete senza Bluetooth
-.venv/bin/python ble.py --scan          # il Click viene trovato?
-.venv/bin/python ble.py --debug --left  # stampa i tasti premuti
-.venv/bin/python obc.py --demo          # senza Click: si annuncia a MyWhoosh e simula le marce
-.venv/bin/python -m unittest test_logic # test, senza bisogno del Click
-packaging/build.sh                      # Click2Whoosh.app e .dmg in packaging/dist
+.venv/bin/python src/app.py                 # l'app, con icona nella barra dei menu
+.venv/bin/python src/app.py --senza-click   # menu, finestre e rete senza Bluetooth
+.venv/bin/python src/ble.py --scan          # il Click viene trovato?
+.venv/bin/python src/ble.py --debug --left  # stampa i tasti premuti
+.venv/bin/python src/obc.py --demo          # senza Click: si annuncia a MyWhoosh e simula le marce
+.venv/bin/python -m unittest discover tests # test, senza bisogno del Click
+packaging/build.sh                          # Click2Whoosh.app e .dmg in packaging/dist
 ```
 Da Terminale i permessi Bluetooth e Accessibilità vanno dati al Terminale. `build.sh` firma l'app con un
 certificato del Portachiavi chiamato "Click2Whoosh", se c'è (Accesso Portachiavi → Assistente Certificato →
 Crea un certificato… → Primo livello autofirmato, Firma del codice): così i permessi restano tra una build e
 l'altra. Altrimenti firma ad-hoc.
 
-Configurazione: `~/Library/Application Support/Click2Whoosh/config.toml` (modello in `config.toml`).
+Configurazione: `~/Library/Application Support/Click2Whoosh/config.toml` (modello in `src/config.toml`).
 Registro: `~/Library/Logs/Click2Whoosh/click2whoosh.log`, anche dal menu "Apri registro".
 
 ## Come funziona

@@ -10,8 +10,8 @@ Protocollo ricavato dalle parti pubbliche di OpenBikeControl/bikecontrol:
   e la batteria si legge dalla caratteristica standard 0x2A19 di ciascun Click
 
 Uso da terminale:
-    python ble.py --scan     cerca i Click nelle vicinanze
-    python ble.py --debug    si collega e stampa i tasti premuti
+    python src/ble.py --scan     cerca i Click nelle vicinanze
+    python src/ble.py --debug    si collega e stampa i tasti premuti
 """
 
 import argparse

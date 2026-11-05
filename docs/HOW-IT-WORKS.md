@@ -11,14 +11,14 @@ Zwift Click v2 (left + right) ──BLE──▶ ble.py ──▶ app.Dispatcher
                                                    click / double / long        └─▶ macOS (media keys, keyboard, screenshot)
 ```
 
-| File | Role |
+| File (in `src/`) | Role |
 |---|---|
 | `ble.py` | Bluetooth (bleak): scan, connect, decode buttons, keep the Click awake. CLI: `--scan`, `--debug [--left] [--keepalive wake\|reset]` |
 | `obc.py` | OpenBikeControl: TCP server (port 36867+) and Bonjour announcement via the system `NSNetService`. CLI: `--demo` |
 | `actions.py` | What a button can do: OpenBikeControl commands (with keyboard fallback), keys, media keys, screenshot; default button sets |
 | `app.py` | Menu bar app (rumps): config, `Dispatcher` (click / double click / long press / repeat), `ClickBridge` (asyncio thread, keep-awake policy), menu, sleep/wake handling |
 | `settings.py`, `onboarding.py` + `.html` | Settings and welcome windows: HTML pages in a native `WKWebView` (`webwindow.py`), sharing `common.html` |
-| `test_logic.py` | Unit tests for decoding, actions, dispatcher and keep-awake logic (no hardware needed) |
+| `tests/test_logic.py` | Unit tests for decoding, actions, dispatcher and keep-awake logic (no hardware needed) |
 
 ## Zwift Click v2 over Bluetooth
 
