@@ -4,3 +4,4 @@ pyobjc-framework-Quartz
 pyobjc-framework-WebKit
 rumps
 pyobjc-framework-UserNotifications
+jinja2

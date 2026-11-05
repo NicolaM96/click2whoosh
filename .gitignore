@@ -13,3 +13,6 @@ packaging/dist/
 .claude/
 # avvio con doppio clic, solo per uso personale
 avvia.command
+
+# translations: the .mo files are compiled from the .po files by packaging/build.sh
+*.mo
