@@ -15,7 +15,6 @@ import asyncio
 import logging
 import shutil
 import subprocess
-import sys
 import threading
 import time
 import tomllib
@@ -609,13 +608,11 @@ def load_config() -> Config:
 
 def main() -> None:
     setup_logging()
-    # --senza-click: niente Bluetooth, per provare menu, impostazioni e rete senza toccare il Click.
-    use_bluetooth = "--senza-click" not in sys.argv
-    log.info("avvio Click2Whoosh%s", "" if use_bluetooth else " senza Bluetooth")
-    first_run = not CONFIG_PATH.exists() or "--primo-avvio" in sys.argv  # apre la finestra di benvenuto
+    log.info("avvio Click2Whoosh")
+    first_run = not CONFIG_PATH.exists()  # apre la finestra di benvenuto
     config = load_config()
     dispatcher = Dispatcher(config)
-    bridge = ClickBridge(dispatcher, config, use_bluetooth)
+    bridge = ClickBridge(dispatcher, config)
     bridge.start()
     MenuBarApp(bridge, dispatcher, first_run).run()
 

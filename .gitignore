@@ -11,3 +11,5 @@ packaging/build/
 packaging/dist/
 # impostazioni locali di Claude Code
 .claude/
+# avvio con doppio clic, solo per uso personale
+avvia.command

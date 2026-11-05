@@ -48,10 +48,6 @@ Richiede macOS 11 o successivo (provata su macOS 27, Click v2 firmware 1.1.0, My
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python src/app.py                 # l'app, con icona nella barra dei menu
-.venv/bin/python src/app.py --senza-click   # menu, finestre e rete senza Bluetooth
-.venv/bin/python src/ble.py --scan          # il Click viene trovato?
-.venv/bin/python src/ble.py --debug --left  # stampa i tasti premuti
-.venv/bin/python src/obc.py --demo          # senza Click: si annuncia a MyWhoosh e simula le marce
 .venv/bin/python -m unittest discover tests # test, senza bisogno del Click
 packaging/build.sh                          # Click2Whoosh.app e .dmg in packaging/dist
 ```

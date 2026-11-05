@@ -8,13 +8,8 @@ Protocollo ricavato dalle parti pubbliche di OpenBikeControl/bikecontrol:
   RideKeyPadStatus, campo 1 = bitmask, bit a 0 = tasto premuto)
 - il sinistro inoltra anche tasti e batteria del destro: ogni lato tiene solo i suoi tasti,
   e la batteria si legge dalla caratteristica standard 0x2A19 di ciascun Click
-
-Uso da terminale:
-    python src/ble.py --scan     cerca i Click nelle vicinanze
-    python src/ble.py --debug    si collega e stampa i tasti premuti
 """
 
-import argparse
 import asyncio
 import logging
 import time
@@ -157,7 +152,6 @@ class ClickSide:
 
     side: int
     events: ClickEvents
-    debug: bool = False
     # "wake": sequenza che lo tiene acceso ~15 minuti. "reset": riavvio prima del minuto (riserva).
     keepalive: str | None = None
     keepalive_interval: float = 300.0  # secondi tra un rinnovo e l'altro
@@ -165,7 +159,6 @@ class ClickSide:
     last_message: float = 0.0
     device: BLEDevice | None = None
     just_reset: bool = False
-    explored: bool = False
     client: BleakClient | None = None  # la connessione in corso, per power_off()
     # Dopo power_off() il Click riavviato si fa vedere per qualche secondo: non lo si cerca
     # finché non si è addormentato davvero, altrimenti lo si ricollegherebbe per niente.
@@ -190,8 +183,6 @@ class ClickSide:
 
     def handle(self, data: bytes) -> None:
         self.last_message = time.monotonic()
-        if self.debug:
-            log.info("[%s] ricevuto %s", self.name, data.hex(" "))
         if not data:
             return
         if data.startswith(RIDE_ON):
@@ -212,34 +203,6 @@ class ClickSide:
         for name in sorted(self.pressed - now):
             self.events.on_release(name)
         self.pressed = now
-
-    async def listen_to_everything(self, client: BleakClient) -> None:
-        """Solo debug: elenca servizi e caratteristiche, legge i valori e ascolta tutte le notifiche."""
-        known = {ASYNC_CHAR_UUID, SYNC_TX_CHAR_UUID}
-        for service in client.services:
-            log.info("[%s] servizio %s", self.name, service.uuid)
-            for char in service.characteristics:
-                descriptors = ", ".join(f"{d.uuid[4:8]}@0x{d.handle:04x}" for d in char.descriptors)
-                log.info("[%s]   handle 0x%04x %s (%s) %s", self.name, char.handle, char.uuid[:8],
-                         ", ".join(char.properties), descriptors)
-                if char.uuid in known:
-                    continue
-                if "read" in char.properties:
-                    try:
-                        value = bytes(await client.read_gatt_char(char))
-                        text = value.decode("utf-8", "replace") if value.isascii() else ""
-                        log.info("[%s] %s = %s %s", self.name, char.uuid, value.hex(" "), text)
-                    except Exception as e:
-                        log.info("[%s] %s non leggibile: %s", self.name, char.uuid, e)
-                if "notify" in char.properties or "indicate" in char.properties:
-                    uuid = char.uuid
-                    try:
-                        await client.start_notify(
-                            char, lambda _, d, uuid=uuid: log.info("[%s] da %s: %s", self.name, uuid, bytes(d).hex(" "))
-                        )
-                        log.info("[%s] ascolto anche %s (%s)", self.name, uuid, ", ".join(char.properties))
-                    except Exception as e:
-                        log.info("[%s] non riesco ad ascoltare %s: %s", self.name, uuid, e)
 
     async def keep_awake(self, client: BleakClient) -> None:
         """Evita che il Click si spenga dopo 60 s, finché serve (vedi ClickEvents.keep_awake_allowed).
@@ -386,10 +349,7 @@ class ClickSide:
             self.client = client
             await client.start_notify(ASYNC_CHAR_UUID, lambda _, d: self.handle(bytes(d)))
             await client.start_notify(SYNC_TX_CHAR_UUID, lambda _, d: self.handle(bytes(d)))
-            if self.debug and not self.explored:
-                await self.listen_to_everything(client)
-                self.explored = True
-            elif self.keepalive == "wake":
+            if self.keepalive == "wake":
                 for uuid in (WAKE_CHAR_UUID, WAKE_CONTROL_UUID):
                     characteristic = client.services.get_characteristic(uuid)
                     if characteristic is not None:
@@ -404,12 +364,11 @@ class ClickSide:
             # (vedi wake_sequence), più gli aggiornamenti che il Click manda da sé.
             await self.read_battery(client)
             await self.read_firmware(client)
-            if not self.debug:
-                try:
-                    await client.start_notify(BATTERY_LEVEL_UUID,
-                                              lambda _, d: d and self.events.on_battery(self.name, d[0]))
-                except Exception as e:
-                    log.info("[%s] notifiche batteria non disponibili: %s", self.name, e)
+            try:
+                await client.start_notify(BATTERY_LEVEL_UUID,
+                                          lambda _, d: d and self.events.on_battery(self.name, d[0]))
+            except Exception as e:
+                log.info("[%s] notifiche batteria non disponibili: %s", self.name, e)
             keepalive = asyncio.create_task(self.keep_awake(client)) if self.keepalive else None
             if keepalive:
                 keepalive.add_done_callback(self._log_keepalive_error)
@@ -447,56 +406,3 @@ class ClickSide:
                 self.events.on_status(self.name, "disconnesso")
             await asyncio.sleep(0.2 if self.just_reset else 1)
 
-
-async def scan(seconds: float) -> None:
-    print(f"Cerco per {seconds:.0f} secondi... premi un tasto del Click per svegliarlo.")
-    seen: dict[str, tuple[str, int | None, int]] = {}
-
-    def on_detect(device: BLEDevice, adv: AdvertisementData) -> None:
-        if ZWIFT_MANUFACTURER_ID in adv.manufacturer_data or RIDE_SERVICE_UUID in adv.service_uuids:
-            seen[device.address] = (device.name or "?", click_side(adv), adv.rssi)
-
-    async with BleakScanner(on_detect):
-        await asyncio.sleep(seconds)
-
-    if not seen:
-        print("Nessun dispositivo Zwift trovato.")
-    for address, (name, side, rssi) in seen.items():
-        label = SIDE_NAMES.get(side, "lato sconosciuto") if side is not None else "non Click v2"
-        print(f"  {name:20} {label:16} segnale {rssi} dBm  ({address})")
-
-
-async def debug(use_left: bool, keepalive: str | None, interval: float) -> None:
-    events = ClickEvents(
-        on_press=lambda n: print(f"  ▼ {n}"),
-        on_release=lambda n: print(f"  ▲ {n}"),
-        on_battery=lambda s, lvl: print(f"  batteria {s}: {lvl}%"),
-        on_status=lambda s, st: print(f"[{s}] {st}"),
-    )
-    sides = [ClickSide(side, events, debug=True, keepalive=keepalive, keepalive_interval=interval)
-             for side in ([SIDE_RIGHT, SIDE_LEFT] if use_left else [SIDE_RIGHT])]
-    await asyncio.gather(*(s.run_forever() for s in sides))
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--scan", action="store_true", help="cerca i Click nelle vicinanze")
-    parser.add_argument("--debug", action="store_true", help="collegati e stampa i tasti premuti")
-    parser.add_argument("--keepalive", choices=["wake", "reset"], help="con --debug, tieni sveglio il Click")
-    parser.add_argument("--interval", type=float, default=300, help="secondi tra un rinnovo e l'altro")
-    parser.add_argument("--left", action="store_true", help="con --debug, collega anche il Click sinistro")
-    parser.add_argument("--seconds", type=float, default=10)
-    args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
-
-    try:
-        if args.debug:
-            asyncio.run(debug(args.left, args.keepalive, args.interval))
-        else:
-            asyncio.run(scan(args.seconds))
-    except KeyboardInterrupt:
-        pass
-
-
-if __name__ == "__main__":
-    main()

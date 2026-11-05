@@ -10,15 +10,10 @@ Protocollo aperto (MIT): https://github.com/OpenBikeControl/openbikecontrol-prot
 L'annuncio usa NSNetService, cioè il Bonjour di sistema: MyWhoosh risolve l'indirizzo
 chiedendo proprio a lui. NSNetService va pubblicato da un thread con run loop (quello
 principale dell'app); il server TCP gira invece nel loop asyncio del Bluetooth.
-
-Prova da terminale (senza Click, simula + e B ogni 3 secondi):
-    python src/obc.py --demo
 """
 
-import argparse
 import asyncio
 import logging
-import threading
 import uuid
 from dataclasses import dataclass, field
 from typing import Callable
@@ -216,42 +211,3 @@ class Advertiser:
         self.service.publish()
         log.info("annuncio Bonjour rinnovato")
 
-
-def demo() -> None:
-    """Annuncia e simula + e B: utile per provare MyWhoosh senza il Click."""
-    from Foundation import NSDate, NSRunLoop
-
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
-    ready = threading.Event()
-
-    async def run() -> None:
-        await server.start()
-        ready.set()
-        while True:
-            await asyncio.sleep(3)
-            if server.connected:
-                for name in ("shift_up", "shift_down"):
-                    log.info("demo: %s", name)
-                    server.send([BUTTONS[name]], True)
-                    await asyncio.sleep(0.1)
-                    server.send([BUTTONS[name]], False)
-                    await asyncio.sleep(1)
-
-    threading.Thread(target=lambda: asyncio.run(run()), daemon=True).start()
-    ready.wait()
-    advertiser = Advertiser(server.port)
-    print("Annunciato. In MyWhoosh attiva OpenBikeControl / controller di rete. Ctrl+C per uscire.")
-    try:
-        while True:
-            NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.5))
-    except KeyboardInterrupt:
-        advertiser.stop()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--demo", action="store_true", help="annuncia e simula + e B ogni pochi secondi")
-    if parser.parse_args().demo:
-        demo()
-    else:
-        parser.print_help()
