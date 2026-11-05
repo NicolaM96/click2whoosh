@@ -10,7 +10,7 @@ title: "Firmware [versione]: funziona / works / non funziona / doesn't"
 
 **Versione di Click2Whoosh, macOS, MyWhoosh:**
 
-**Registro / Log** (menu → Apri registro / Open log). Incolla le righe con «firmware» e «wake» / paste the lines with "firmware" and "wake":
+**Registro / Log** (menu → Apri registro / Open Log). Incolla le righe con «firmware» e «wake» / paste the lines with "firmware" and "wake":
 
 ```
 

@@ -5,11 +5,11 @@
 Usa i controller **Zwift Click v2** con **MyWhoosh** su Mac: marce, sterzo, musica e altro, senza
 l'app Zwift. Un'app per la barra dei menu, scritta in Python.
 
-![Impostazioni](docs/images/settings.png)
+![Impostazioni](docs/images/it/settings.png)
 
 | Collegamento | Tasti |
 |---|---|
-| ![Collega il Click](docs/images/connect.png) | ![I tasti](docs/images/buttons.png) |
+| ![Collega il Click](docs/images/it/connect.png) | ![I tasti](docs/images/it/buttons.png) |
 
 ## Cosa fa
 - **Tutti e due i Click** (sinistro e destro), tenuti accesi senza l'app Zwift e fatti spegnere quando non servono, per non consumare la pila.
@@ -18,7 +18,7 @@ l'app Zwift. Un'app per la barra dei menu, scritta in Python.
 - **Finestra di benvenuto** che fa dare i permessi uno alla volta e spiega tasti e menu; **Impostazioni** col disegno dei Click che si illumina quando premi un tasto.
 - Batteria di ogni Click, suono a ogni cambio marcia (il Click v2 non vibra), avvisi per pila scarica, MyWhoosh scollegato o firmware cambiato.
 
-Le interfacce dell'app sono in italiano.
+L'interfaccia è in italiano e in inglese, secondo la lingua del Mac. Altre lingue sono benvenute: vedi [CONTRIBUTING.md](CONTRIBUTING.md#translations) (in inglese).
 
 ## Tasti di default
 | Click | Tasto | Clic | Doppio clic | Tenuto premuto |
@@ -46,7 +46,8 @@ Richiede macOS 11 o successivo (provata su macOS 27, Click v2 firmware 1.1.0, My
 ## Dal codice sorgente (Python 3.11+)
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pybabel compile -d src/locale -D click2whoosh   # traduzioni (senza: solo inglese)
 .venv/bin/python src/app.py                 # l'app, con icona nella barra dei menu
 .venv/bin/python -m unittest discover tests # test, senza bisogno del Click
 packaging/build.sh                          # Click2Whoosh.app e .dmg in packaging/dist
@@ -58,6 +59,7 @@ l'altra. Altrimenti firma ad-hoc.
 
 Configurazione: `~/Library/Application Support/Click2Whoosh/config.toml` (modello in `src/config.toml`).
 Registro: `~/Library/Logs/Click2Whoosh/click2whoosh.log`, anche dal menu "Apri registro".
+Per provare un'altra lingua: `C2W_LANG=en .venv/bin/python src/app.py`.
 
 ## Come funziona
 Protocollo del Click v2, sequenza che lo tiene acceso, cosa accetta MyWhoosh e dettagli di macOS:
