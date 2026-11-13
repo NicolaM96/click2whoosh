@@ -6,14 +6,12 @@ window is closed), so the macOS requests appear one at a time, explained.
 """
 
 import ctypes
-import json
 import subprocess
 from typing import Callable
 
 import objc
 from CoreBluetooth import CBManager, CBManagerAuthorizationAllowedAlways, CBManagerAuthorizationNotDetermined
 from Foundation import NSDictionary, NSNetServiceBrowser, NSObject
-from PyObjCTools import AppHelper
 
 import login
 import obc
@@ -112,10 +110,7 @@ class OnboardingWindow(WebWindow):
 
     def pressed(self, name: str, is_pressed: bool) -> None:
         """From the Bluetooth thread: the button stays lit on the drawing while it is pressed."""
-        def light() -> None:
-            if self.visible:
-                self._eval(f"window.c2wPressed && window.c2wPressed({json.dumps(name)}, {json.dumps(is_pressed)})")
-        AppHelper.callAfter(light)
+        self.call("c2wPressed", name, is_pressed)
 
     def on_message(self, kind: str, message: dict) -> None:
         if kind == "allow":

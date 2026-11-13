@@ -131,9 +131,13 @@ class WebWindow:
             self.webview.evaluateJavaScript_completionHandler_(script, None)
 
     def call(self, function: str, *args) -> None:
-        """Calls window.<function>(args) in the page, from the main thread."""
+        """Calls window.<function>(args) in the page, from the main thread, if still visible by then."""
         script = f"window.{function} && window.{function}({', '.join(json.dumps(a) for a in args)})"
-        AppHelper.callAfter(self._eval, script)
+
+        def run() -> None:
+            if self.visible:
+                self._eval(script)
+        AppHelper.callAfter(run)
 
     def _message(self, message: dict) -> None:
         kind = message.get("type")

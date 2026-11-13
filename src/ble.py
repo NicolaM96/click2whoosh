@@ -14,6 +14,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Callable
 
 from bleak import BleakClient, BleakScanner
@@ -85,6 +86,8 @@ BUTTON_MASKS = {name: mask for name, (_, mask) in BUTTONS.items()}
 ALL_RELEASED = 0xFFFFFFFF
 # Fallback if a firmware stopped accepting the "wake" sequence: restart before the minute is up.
 RESET_AFTER_S = 55
+# Prefix of the status message lock_state() reads: hoisted so the hex parsing is not redone on every message.
+_LOCK_PREFIX = bytes.fromhex("ff 05 00 ea 05")
 
 
 def read_varint(data: bytes, pos: int) -> tuple[int, int]:
@@ -130,7 +133,7 @@ def lock_state(data: bytes) -> int | None:
 
     Measured on the left Click without Zwift: 0 when it starts, 1 about 51 s later; from then on
     it no longer sends buttons. None if this is not that message."""
-    if data[:5] != bytes.fromhex("ff 05 00 ea 05"):
+    if data[:5] != _LOCK_PREFIX:
         return None
     try:
         return parse_protobuf(data[6:]).get(2)
@@ -196,6 +199,11 @@ class ClickSide:
     def name(self) -> str:
         return SIDE_NAMES[self.side]
 
+    @cached_property
+    def my_buttons(self) -> frozenset[str]:
+        """This side's own buttons (self.side never changes, so computed once)."""
+        return frozenset(SIDE_BUTTONS[self.side])
+
     async def find(self, timeout: float = 10.0) -> BLEDevice | None:
         found: asyncio.Future[BLEDevice] = asyncio.get_running_loop().create_future()
 
@@ -231,12 +239,13 @@ class ClickSide:
                 log.info("[%s] message with opcode 0x%02x ignored: %s", self.name, data[0], data[:6].hex(" "))
             return
         try:
-            mine = pressed_buttons(data[1:]) & set(SIDE_BUTTONS[self.side])
+            all_pressed = pressed_buttons(data[1:])
+            mine = all_pressed & self.my_buttons
             # Diagnostic (a Click that stopped sending buttons). A Click sends ~10 "all released"
             # messages per second, so those are only counted: one summary line per minute shows
             # whether it is still talking. Messages with a pressed button are logged one by one.
             self.messages += 1
-            if pressed_buttons(data[1:]):
+            if all_pressed:
                 log.info("[%s] buttons message %s -> %s", self.name, data[:8].hex(" "), sorted(mine) or "nothing for this side")
             now = time.monotonic()
             if now - self.summary_at >= 60:
@@ -258,63 +267,68 @@ class ClickSide:
     async def keep_awake(self, client: BleakClient) -> None:
         """Keeps the Click from switching off after 60 s, for as long as needed (see ClickEvents.keep_awake_allowed).
 
-        "wake": the wake_sequence() sequence keeps it on for ~15 minutes and is renewed
-        every keepalive_interval seconds, without disconnecting it.
-        "reset": fallback for a firmware that did not accept the sequence. It is restarted before
-        the minute is up (3-4 s during which buttons do not arrive); after a restart buttons do not
-        postpone the switch-off, so it is done within keepalive_interval seconds of
-        connecting, choosing if possible a moment with no buttons pressed.
+        "wake": _keep_awake_wake()'s sequence keeps it on for ~15 minutes and is renewed every
+        keepalive_interval seconds, without disconnecting it.
+        "reset": _keep_awake_reset(), the fallback for a firmware that did not accept the sequence.
         """
         if self.keepalive == "wake":
-            wake = client.services.get_characteristic(WAKE_CHAR_UUID)
-            control = client.services.get_characteristic(WAKE_CONTROL_UUID)
-            if wake is None or control is None:
-                log.warning("[%s] wake characteristics not found: using the reset instead", self.name)
-                self.keepalive, self.keepalive_interval = "reset", RESET_AFTER_S
-                return await self.keep_awake(client)
-            # Just connected: if there is no need to keep it awake now, we still wait until
-            # just before the minute is up, because a pressed button (e.g. for music) may change things.
-            waited = 0.0
-            while not self.events.keep_awake_allowed():
-                if waited == 0:
-                    log.info("[%s] no need to keep it awake for now", self.name)
-                if waited >= 50:
-                    log.info("[%s] no button pressed: it will switch itself off", self.name)
-                    return
-                await asyncio.sleep(2)
-                waited += 2
-            while True:
-                await self.wake_sequence(client, wake, control)
-                # Between one cycle and the next we check often whether it is still needed (e.g. MyWhoosh closed).
-                waited = 0.0
-                while waited < self.keepalive_interval:
-                    await asyncio.sleep(5)
-                    waited += 5
-                    if not self.events.keep_awake_allowed():
-                        # Each cycle keeps it on for ~15 minutes: we reset it to make it switch off right away.
-                        await self.power_off("no need to keep it awake")
-                        return
+            await self._keep_awake_wake(client)
+        elif self.keepalive == "reset":
+            await self._keep_awake_reset(client)
 
-        if self.keepalive == "reset":
-            connected_at = time.monotonic()
-            # Each restart uses battery: we do it as late as possible, anticipating it by at most
-            # quiet_window seconds so it doesn't happen while buttons are being pressed.
-            quiet_window = 6
-            while True:
-                await asyncio.sleep(0.5)
-                now = time.monotonic()
-                age, idle = now - connected_at, now - self.last_message
-                if age >= self.keepalive_interval or self.locked:
-                    # self.locked: the Click says it stopped sending buttons (about 51 s after starting)
-                    break
-                if age >= self.keepalive_interval - quiet_window and idle >= 2 and not self.pressed:
-                    break
-            if not self.events.keep_awake_allowed():
-                await self.power_off("no need to keep it awake")
+    async def _keep_awake_wake(self, client: BleakClient) -> None:
+        wake = client.services.get_characteristic(WAKE_CHAR_UUID)
+        control = client.services.get_characteristic(WAKE_CONTROL_UUID)
+        if wake is None or control is None:
+            log.warning("[%s] wake characteristics not found: using the reset instead", self.name)
+            self.keepalive, self.keepalive_interval = "reset", RESET_AFTER_S
+            return await self._keep_awake_reset(client)
+        # Just connected: if there is no need to keep it awake now, we still wait until
+        # just before the minute is up, because a pressed button (e.g. for music) may change things.
+        waited = 0.0
+        while not self.events.keep_awake_allowed():
+            if waited == 0:
+                log.info("[%s] no need to keep it awake for now", self.name)
+            if waited >= 50:
+                log.info("[%s] no button pressed: it will switch itself off", self.name)
                 return
-            log.info("[%s] connected for %.0f s, buttons idle for %.0f s: restarting the Click", self.name, age, idle)
-            self.just_reset = True
-            await client.write_gatt_char(SYNC_RX_CHAR_UUID, bytes([OPCODE_RESET]), response=False)
+            await asyncio.sleep(2)
+            waited += 2
+        while True:
+            await self.wake_sequence(client, wake, control)
+            # Between one cycle and the next we check often whether it is still needed (e.g. MyWhoosh closed).
+            waited = 0.0
+            while waited < self.keepalive_interval:
+                await asyncio.sleep(5)
+                waited += 5
+                if not self.events.keep_awake_allowed():
+                    # Each cycle keeps it on for ~15 minutes: we reset it to make it switch off right away.
+                    await self.power_off("no need to keep it awake")
+                    return
+
+    async def _keep_awake_reset(self, client: BleakClient) -> None:
+        """Restarted before the minute is up (3-4 s during which buttons do not arrive); after a
+        restart buttons do not postpone the switch-off, so it is done within keepalive_interval
+        seconds of connecting, choosing if possible a moment with no buttons pressed."""
+        connected_at = time.monotonic()
+        # Each restart uses battery: we do it as late as possible, anticipating it by at most
+        # quiet_window seconds so it doesn't happen while buttons are being pressed.
+        quiet_window = 6
+        while True:
+            await asyncio.sleep(0.5)
+            now = time.monotonic()
+            age, idle = now - connected_at, now - self.last_message
+            if age >= self.keepalive_interval or self.locked:
+                # self.locked: the Click says it stopped sending buttons (about 51 s after starting)
+                break
+            if age >= self.keepalive_interval - quiet_window and idle >= 2 and not self.pressed:
+                break
+        if not self.events.keep_awake_allowed():
+            await self.power_off("no need to keep it awake")
+            return
+        log.info("[%s] connected for %.0f s, buttons idle for %.0f s: restarting the Click", self.name, age, idle)
+        self.just_reset = True
+        await client.write_gatt_char(SYNC_RX_CHAR_UUID, bytes([OPCODE_RESET]), response=False)
 
     async def read_battery(self, client: BleakClient) -> None:
         try:

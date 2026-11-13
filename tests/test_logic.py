@@ -42,6 +42,13 @@ def keypad(*masks: int) -> bytes:
     return bytes([0x23, 0x08]) + varint(button_map)
 
 
+class FakeCharacteristic:
+    """Minimal stand-in for a bleak characteristic: only .uuid and .obj are ever read."""
+
+    def __init__(self, uuid):
+        self.uuid, self.obj = uuid, None
+
+
 class DecodeTest(unittest.TestCase):
     def test_frames_from_the_real_click(self):
         # Bytes copied from the Click v2 logs (firmware 1.1.0).
@@ -225,10 +232,6 @@ class KeepAwakeTest(unittest.TestCase):
     def test_wake_sequence_matches_bikecontrol(self):
         import ble
 
-        class Char:
-            def __init__(self, uuid):
-                self.uuid, self.obj = uuid, None
-
         class FakeClient:
             def __init__(self):
                 self.writes = []
@@ -241,7 +244,7 @@ class KeepAwakeTest(unittest.TestCase):
 
         client = FakeClient()
         side = ClickSide(SIDE_RIGHT, ClickEvents())
-        asyncio.run(side.wake_sequence(client, Char(ble.WAKE_CHAR_UUID), Char(ble.WAKE_CONTROL_UUID)))
+        asyncio.run(side.wake_sequence(client, FakeCharacteristic(ble.WAKE_CHAR_UUID), FakeCharacteristic(ble.WAKE_CONTROL_UUID)))
         # The same bytes BikeControl sends to the Click (PacketLogger capture).
         self.assertEqual(client.writes, [
             ("0102", "01"),
@@ -270,13 +273,9 @@ class KeepAwakeTest(unittest.TestCase):
     def test_wakes_later_if_a_button_is_pressed_after_connecting(self):
         import ble
 
-        class Char:
-            def __init__(self, uuid):
-                self.uuid, self.obj = uuid, None
-
         class Services:
             def get_characteristic(self, uuid):
-                return Char(uuid)
+                return FakeCharacteristic(uuid)
 
         class FakeClient:
             services = Services()
@@ -512,9 +511,8 @@ class OpenBikeControlTest(unittest.TestCase):
 
 class SettingsTest(unittest.TestCase):
     def raw(self):
-        with open(app.DEFAULT_CONFIG, "rb") as f:
-            import tomllib
-            return tomllib.load(f)
+        from config_io import load_raw_toml
+        return load_raw_toml(app.DEFAULT_CONFIG)
 
     def test_template_matches_default_buttons(self):
         from actions import DEFAULT_BUTTONS

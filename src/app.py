@@ -17,7 +17,6 @@ import shutil
 import subprocess
 import threading
 import time
-import tomllib
 import uuid
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -31,10 +30,11 @@ from PyObjCTools import AppHelper
 import icons
 import login
 import obc
-from actions import DEFAULT_REPEAT_BUTTONS, Action, describe, frontmost_app, play_shift_sound, repeatable
+from actions import DEFAULT_REPEAT_BUTTONS, Action, describe, frontmost_app, open_in_editor, play_shift_sound, repeatable
 from ble import (BUTTON_LABELS, SIDE_LEFT, SIDE_RIGHT, STATUS_BLUETOOTH_DENIED, STATUS_BLUETOOTH_OFF,
                  STATUS_BLUETOOTH_UNAVAILABLE, STATUS_CONNECTED, STATUS_DISCONNECTED, STATUS_RESTARTING,
                  STATUS_SEARCHING, STATUS_UNUSED, TESTED_FIRMWARE, ClickEvents, ClickSide)
+from config_io import load_raw_toml
 from i18n import _
 
 DEFAULT_CONFIG = Path(__file__).with_name("config.toml")
@@ -138,9 +138,12 @@ def mywhoosh_in_front() -> bool:
 class Config:
     """config.toml: only what makes sense to change (the same things as the Settings window)."""
 
+    # Settings that only take effect on the next launch (ClickBridge.run() reads them once, at
+    # thread start): config_saved() warns about these, instead of every setting applying live.
+    RESTART_REQUIRED = {"use_left_side"}
+
     def __init__(self, path: Path):
-        with path.open("rb") as f:
-            raw = tomllib.load(f)
+        raw = load_raw_toml(path)
         general = raw.get("general", {})
         limits = {"long_press_ms": (600, 200, 3000), "double_press_ms": (300, 100, 1000),
                   "battery_warning": (20, 0, 100)}
@@ -179,10 +182,13 @@ class Dispatcher:
         self.captured: set[str] = set()
 
     def allowed(self, action: Action) -> bool:
-        if action.needs_target_app and not mywhoosh_in_front():
-            log.info("ignoring %s: '%s' is in front, not %s", action, frontmost_app(), TARGET_APP)
-            return False
-        return True
+        if not action.needs_target_app:
+            return True
+        front = frontmost_app()
+        if TARGET_APP.lower() in front.lower():
+            return True
+        log.info("ignoring %s: '%s' is in front, not %s", action, front, TARGET_APP)
+        return False
 
     def run(self, name: str, action: Action) -> None:
         button, _sep, how = name.partition(" ")
@@ -294,8 +300,9 @@ class ClickBridge:
     """Thread with the asyncio loop that keeps the Clicks and the OpenBikeControl server connected."""
 
     def __init__(self, dispatcher: Dispatcher, config: Config, use_bluetooth: bool = True):
+        # The current Config always lives on the dispatcher (config_saved() updates it there);
+        # the constructor only needs its own copy to read use_left_side once, below.
         self.dispatcher = dispatcher
-        self.config = config
         self.use_bluetooth = use_bluetooth
         self.status: dict[str, str] = {"right": STATUS_SEARCHING if use_bluetooth else STATUS_UNUSED}
         if config.use_left_side:
@@ -330,7 +337,7 @@ class ClickBridge:
             log.info("[%s] batteria %d%%", side, level)
         self.battery[side] = level
         obc.server.set_battery(min(self.battery.values()))
-        if level < self.config.battery_warning and side not in self.warned:
+        if level < self.dispatcher.config.battery_warning and side not in self.warned:
             self.warned.add(side)
             notify("Zwift Click", _("{click} battery at {level}%").format(click=click_name(side), level=level))
 
@@ -399,7 +406,7 @@ class ClickBridge:
         self.bluetooth_go.set()
 
     def run(self) -> None:
-        sides = [SIDE_RIGHT, SIDE_LEFT] if self.config.use_left_side else [SIDE_RIGHT]
+        sides = [SIDE_RIGHT, SIDE_LEFT] if self.dispatcher.config.use_left_side else [SIDE_RIGHT]
         # The right Click stays up with the "wake" sequence. The left one stops sending buttons about
         # a minute after it starts (it wants Zwift's unlock): like BikeControl we restart it before that.
         self.sides = [ClickSide(side, self.events, keepalive="reset", keepalive_interval=LEFT_RESET_S)
@@ -537,13 +544,12 @@ class MenuBarApp(rumps.App):
         item.state = login.is_enabled()
 
     def open_log(self, sender) -> None:
-        subprocess.Popen(["open", "-t", str(LOG_PATH)])
+        open_in_editor(LOG_PATH)
 
     def config_saved(self, changed: set) -> None:
         """Called by the Settings window after writing config.toml."""
-        config = Config(CONFIG_PATH)  # if invalid it raises and the window restores the file
-        self.dispatcher.config = self.bridge.config = config
-        if "use_left_side" in changed:
+        self.dispatcher.config = Config(CONFIG_PATH)  # if invalid it raises and the window restores the file
+        if changed & Config.RESTART_REQUIRED:
             notify("Click2Whoosh", _("This change takes effect the next time the app starts"))
 
 

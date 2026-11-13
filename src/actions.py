@@ -23,6 +23,7 @@ import Quartz
 from AppKit import NSEvent, NSSound, NSWorkspace
 from PyObjCTools import AppHelper
 
+import i18n
 import obc
 from i18n import _
 
@@ -30,6 +31,10 @@ log = logging.getLogger("click2whoosh")
 
 # If MyWhoosh is not connected over OpenBikeControl, these commands use the keyboard.
 OBC_KEYBOARD_FALLBACK = {"shift_up": "key:k", "shift_down": "key:i", "steer_left": "hold:a", "steer_right": "hold:d"}
+# The same table, the other way round: key letter -> "up"/"down", for Action.shift_direction.
+_KEY_TO_SHIFT_DIRECTION = {spec.removeprefix("key:"): command.removeprefix("shift_")
+                           for command, spec in OBC_KEYBOARD_FALLBACK.items()
+                           if spec.startswith("key:") and command.startswith("shift_")}
 
 # macOS key codes (physical layout, independent of the keyboard language).
 KEY_CODES = {
@@ -99,10 +104,18 @@ def repeatable(spec: str) -> bool:
     return spec.startswith(("obc:", "key:")) and spec not in HELD_ACTIONS
 
 
+# action_choices() rebuilds translated labels (several gettext lookups); describe() is called on every
+# press and, while a button repeats, several times a second, so the spec -> label map is cached per
+# language instead of rebuilt and rescanned every time.
+_describe_cache: dict[str, dict[str, str]] = {}
+
+
 def describe(spec: str) -> str:
-    for _group, choice, label in action_choices():
-        if choice == spec:
-            return label
+    labels = _describe_cache.get(i18n.language)
+    if labels is None:
+        labels = _describe_cache[i18n.language] = {choice: label for _group, choice, label in action_choices()}
+    if spec in labels:
+        return labels[spec]
     kind, _sep, arg = spec.partition(":")
     if kind == "key":
         return _("Key {key}").format(key=arg.upper())
@@ -158,6 +171,11 @@ def take_screenshot() -> None:
     log.info("screenshot saved to %s", path)
 
 
+def open_in_editor(path: Path) -> None:
+    """Opens a file in the user's default text editor."""
+    subprocess.Popen(["open", "-t", str(path)])
+
+
 class Action:
     """An action read from config.toml."""
 
@@ -195,7 +213,7 @@ class Action:
         if self.kind == "obc" and self.button_ids:
             return {obc.BUTTONS["shift_up"]: "up", obc.BUTTONS["shift_down"]: "down"}.get(self.button_ids[0])
         if self.kind == "key":
-            return {"k": "up", "i": "down"}.get(self.arg)
+            return _KEY_TO_SHIFT_DIRECTION.get(self.arg)
         return None
 
     @property
