@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Welcome") }}</title>
+{% include "common.html" %}
+<style>
+body { padding: 22px 26px 18px; }
+.page { min-height: 410px; display: none; flex-direction: column; }
+.page.on { display: flex; }
+h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
+.lead { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+b { font-weight: 600; }
+
+/* rows with a status: permissions, summary */
+.rows { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.icon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 16px;
+  background: var(--accent-bg); }
+.row .what b { display: block; }
+.row .what span { color: var(--muted); font-size: 12px; }
+.tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+.tag.ok { color: var(--ok); background: var(--ok-bg); }
+.tag.off { color: var(--off); background: var(--off-bg); }
+.tag.bad { color: var(--bad); background: var(--bad-bg); }
+.help { grid-column: 2 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
+button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 5px 16px; }
+
+/* the Click drawing */
+.click-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
+.big { font-size: 16px; font-weight: 600; margin: 4px 0; }
+.puck-label.ok { color: var(--ok); }
+.sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 18px; }
+.side { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+.side.stacked { grid-template-columns: minmax(0, 1fr); align-content: start; align-items: start; justify-items: center; gap: 10px; }
+.side.stacked .keys { justify-self: stretch; }
+
+/* numbered steps */
+ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* buttons */
+.keys { display: grid; gap: 8px; }
+.key { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; }
+.badge { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+  font-weight: 600; font-size: 12px; background: #3a3a3c; }
+.badge.y { background: var(--key-y); } .badge.z { background: var(--key-z); }
+.badge.a { background: var(--key-a); } .badge.b { background: var(--key-b); }
+.key div span { color: var(--muted); font-size: 12px; display: block; }
+
+dl { margin: 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 14px; }
+dt { font-weight: 600; }
+dd { margin: 0; color: var(--muted); }
+
+/* bottom bar */
+.nav { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+.dots { display: flex; gap: 6px; }
+.dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--off-bg); }
+.dots span.on { background: var(--accent); }
+.nav .buttons { display: flex; gap: 8px; }
+label.check { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+</style>
+</head>
+
+<body>
+
+<section class="page on" data-page="welcome">
+  <h1>{{ _("Welcome to Click2Whoosh") }}</h1>
+  <p class="lead">{{ _("With Click2Whoosh, the Zwift Click v2 controls MyWhoosh on your Mac: gears, steering and music, no subscription needed.") }}</p>
+  <div class="card rows">
+    <div class="row"><div class="icon">🔐</div><div class="what"><b>{{ _("Permissions") }}</b><span>{{ _("Three macOS authorizations, one at a time.") }}</span></div><span></span></div>
+    <div class="row"><div class="icon">🎮</div><div class="what"><b>{{ _("Connections") }}</b><span>{{ _("The Click over Bluetooth, MyWhoosh over the network.") }}</span></div><span></span></div>
+    <div class="row"><div class="icon">💡</div><div class="what"><b>{{ _("How to use it") }}</b><span>{{ _("What the buttons do, the menu and the settings.") }}</span></div><span></span></div>
+  </div>
+  <p class="muted small" style="margin-top:14px">{{ _("It takes a couple of minutes. You can review this guide any time from the cyclist icon in the menu bar: “Getting Started…”.") }}</p>
+</section>
+
+<section class="page" data-page="permissions">
+  <h1>{{ _("Permissions") }}</h1>
+  <p class="lead">{{ _("Press “Allow” on each row: macOS opens its own window, answer “Allow” there too.") }}</p>
+  <div class="card rows">
+    <div class="row" data-perm="bluetooth"><div class="icon">📶</div>
+      <div class="what"><b>{{ _("Bluetooth") }}</b><span>{{ _("To connect to the Click and read its buttons.") }}</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+    <div class="row" data-perm="network"><div class="icon">🌐</div>
+      <div class="what"><b>{{ _("Local Network") }}</b><span>{{ _("So MyWhoosh can find Click2Whoosh and receive gears and steering.") }}</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+    <div class="row" data-perm="accessibility"><div class="icon">⌨️</div>
+      <div class="what"><b>{{ _("Accessibility") }}</b><span>{{ _("For the music buttons and, if MyWhoosh is not connected over the network, to press its keys for you.") }}</span></div>
+      <div class="action"></div>
+      <div class="help"></div></div>
+  </div>
+</section>
+
+<section class="page" data-page="click">
+  <h1>{{ _("Connect the Click") }}</h1>
+  <p class="lead" id="click-lead"></p>
+  <div class="card click-wrap">
+    <div class="pucks" id="click-pucks"></div>
+    <div>
+      <div class="big" id="click-state"></div>
+      <div class="muted" id="click-detail"></div>
+    </div>
+  </div>
+</section>
+
+<section class="page" data-page="mywhoosh">
+  <h1>{{ _("Connect MyWhoosh") }}</h1>
+  <p class="lead">{{ _("Do this once: after that MyWhoosh reconnects by itself.") }}</p>
+  <div class="card">
+    <ol class="steps">
+      <li>{{ _("If you used BikeControl, close it.") }}</li>
+      <li>{{ _("Open MyWhoosh and go to the <b>Connections</b> screen.") }}</li>
+      <li>{{ _("Click the <b>OpenBikeControl</b> icon at the top right.") }}</li>
+      <li>{{ _("Choose <b>Click2Whoosh</b>. MyWhoosh asks whether to connect (“OpenBikeControl Instance Found”): press <b>YES</b>.") }}</li>
+    </ol>
+  </div>
+  <div class="card row" style="margin-top:12px"><div class="icon">🚴</div>
+    <div class="what"><b>MyWhoosh</b><span id="mw-detail"></span></div><span class="tag" id="mw-tag"></span></div>
+  <p class="muted small" style="margin-top:12px">{{ _("You can also do this later: Click2Whoosh keeps listening for as long as it is open.") }}</p>
+</section>
+
+<section class="page" data-page="keys">
+  <h1>{{ _("The buttons") }}</h1>
+  <p class="lead">{{ _("This is how they are set now. A button can do one thing with a click, another with a double click and another one if you hold it.") }}</p>
+  <div class="card sides" id="keys"></div>
+  <p class="muted small" style="margin-top:12px">{{ _("Try them now: with this window in front, the buttons light up on the drawing and send nothing to MyWhoosh or to the music.") }}</p>
+  <p class="muted small">{{ _("To save battery, the Click turns itself off when you are not using it and MyWhoosh is closed. The first button you press wakes it up (that press is lost).") }}</p>
+</section>
+
+<section class="page" data-page="menu">
+  <h1>{{ _("Menu and settings") }}</h1>
+  <p class="lead">{{ _("Click2Whoosh has no windows or Dock icon: you will find it in the menu bar at the top right, as a cyclist. The icon is solid when the Click is connected and lighter when it is waiting for it. Click it to open the menu.") }}</p>
+  <div class="card">
+    <dl>
+      <dt>{{ _("Settings…") }}</dt><dd>{{ _("To change what the buttons do: choose a button (by clicking it on the drawing or pressing it on the Click) and decide what it does with a click, a double click and a long press. It saves by itself.") }}</dd>
+      <dt>{{ _("Advanced") }}</dt><dd>{{ _("At the bottom of Settings: how long a long press lasts, how fast to double-click, at what percentage to warn about a low battery, the sound on every shift and the use of the left Click.") }}</dd>
+      <dt>{{ _("Launch at Login") }}</dt><dd>{{ _("Click2Whoosh starts by itself when the Mac starts.") }}</dd>
+      <dt>{{ _("Getting Started…") }}</dt><dd>{{ _("Reopens this guide.") }}</dd>
+      <dt>{{ _("Open Log") }}</dt><dd>{{ _("The list of what happened (connections, buttons, errors): useful if something goes wrong.") }}</dd>
+      <dt>{{ _("Quit") }}</dt><dd>{{ _("Closes Click2Whoosh and switches the Click off.") }}</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="page" data-page="done">
+  <h1>{{ _("All set") }}</h1>
+  <p class="lead" id="done-lead"></p>
+  <div class="card rows" id="summary"></div>
+  <label class="check" id="login-row" hidden><input type="checkbox" id="login"> {{ _("Launch Click2Whoosh at login") }}</label>
+</section>
+
+<div class="nav">
+  <div class="dots" id="dots"></div>
+  <div class="buttons">
+    <button id="back">{{ _("Back") }}</button>
+    <button id="settings" hidden>{{ _("Open Settings") }}</button>
+    <button id="next" class="primary">{{ _("Let's go") }}</button>
+  </div>
+</div>
+
+<script>
+const T = {
+  letsGo: {{ _("Let's go")|tojson }}, next: {{ _("Next")|tojson }}, done: {{ _("Done")|tojson }},
+  allowed: {{ _("✓ Allowed")|tojson }}, allow: {{ _("Allow")|tojson }}, off: {{ _("Off")|tojson }},
+  openSystemSettings: {{ _("Open System Settings")|tojson }},
+  helpBluetoothDenied: {{ _("Permission denied: press “Open System Settings” and turn on the Click2Whoosh switch.")|tojson }},
+  helpBluetoothOff: {{ _("The Mac's Bluetooth is off: turn it on from Control Center.")|tojson }},
+  helpNetworkAsked: {{ _("Answer “Allow” in the macOS window. If you answered no: System Settings → Privacy & Security → Local Network → turn on Click2Whoosh.")|tojson }},
+  helpAccessibilityAsked: {{ _("In System Settings, under Accessibility, turn on the Click2Whoosh switch (if it is not there, add it with +) and come back here. If it is already on but the checkmark stays gray, remove it with − and add it again.")|tojson }},
+  pressBoth: {{ _("Press any button on each Click: it wakes up and connects within a few seconds.")|tojson }},
+  pressOne: {{ _("Press any button on the Click: it wakes up and connects within a few seconds.")|tojson }},
+  clicksConnected: {{ _("✓ Clicks connected")|tojson }}, clickConnected: {{ _("✓ Click connected")|tojson }},
+  waitingSide: {{ _("Waiting for the {side} Click…")|tojson }}, waiting: {{ _("Waiting for the Click…")|tojson }},
+  allowBluetoothFirst: {{ _("First allow Bluetooth (previous step).")|tojson }},
+  battery: {{ _("Battery {level}%.")|tojson }},
+  tryButtons: {{ _("Press the buttons: they light up on the drawing.")|tojson }},
+  pressOnSide: {{ _("Press a button on the {side} Click too.")|tojson }},
+  led: {{ _("The Click's LED blinks while it connects.")|tojson }},
+  sideWords: { left: {{ _("left")|tojson }}, right: {{ _("right")|tojson }} },
+  mwConnected: {{ _("✓ Connected")|tojson }}, mwWaiting: {{ _("Waiting")|tojson }},
+  mwViaNetwork: {{ _("Gears and steering reach MyWhoosh over the network.")|tojson }},
+  mwNeedsNetwork: {{ _("The Local Network permission is needed (Permissions step).")|tojson }},
+  mwFollowSteps: {{ _("Follow the steps above in MyWhoosh.")|tojson }},
+  bluetooth: {{ _("Bluetooth")|tojson }}, localNetwork: {{ _("Local Network")|tojson }},
+  accessibility: {{ _("Accessibility")|tojson }},
+  ready: {{ _("✓ Ready")|tojson }}, todo: {{ _("To do")|tojson }},
+  doneAll: {{ _("Enjoy the ride! If you want to change what the buttons do, open Settings.")|tojson }},
+  doneSome: {{ _("You can do what is missing later too: go back with Back, or reopen the guide from the cyclist icon in the menu bar.")|tojson }},
+  heldWhile: {{ _("Lasts while you hold it")|tojson }},
+  doubleClick: {{ _("Double click: {action}")|tojson }},
+  longPress: {{ _("Press and hold: {action}")|tojson }},
+};
+
+const pages = [...document.querySelectorAll(".page")];
+let current = 0;
+let status = null;
+let asked = {};  // permissions for which "Allow" has already been pressed
+
+function $(id) { return document.getElementById(id); }
+
+function show(index) {
+  current = Math.max(0, Math.min(index, pages.length - 1));
+  pages.forEach((p, i) => p.classList.toggle("on", i === current));
+  $("dots").innerHTML = pages.map((_, i) => `<span class="${i === current ? "on" : ""}"></span>`).join("");
+  const last = current === pages.length - 1;
+  $("back").hidden = current === 0;
+  $("settings").hidden = !last;
+  $("next").textContent = current === 0 ? T.letsGo : last ? T.done : T.next;
+  render();
+  requestAnimationFrame(reportHeight);
+}
+
+// ---- permissions
+
+const PERM_HELP = {
+  bluetooth: { denied: T.helpBluetoothDenied, off: T.helpBluetoothOff },
+  network: { asked: T.helpNetworkAsked },
+  accessibility: { asked: T.helpAccessibilityAsked },
+};
+
+function permState(name) {
+  const p = status.permissions[name];
+  if (name === "bluetooth" && status.click === "bluetooth_off") return "off";
+  return p === "ok" ? "ok" : p === "denied" ? "denied" : asked[name] ? "asked" : "ask";
+}
+
+function renderPermissions() {
+  for (const row of document.querySelectorAll("[data-perm]")) {
+    const name = row.dataset.perm;
+    const state = permState(name);
+    const action = row.querySelector(".action");
+    const key = `${name}:${state}`;
+    if (action.dataset.key !== key) {  // redrawn only if it changes, so clicks are not lost
+      action.dataset.key = key;
+      action.innerHTML =
+        state === "ok" ? `<span class="tag ok">${T.allowed}</span>`
+        : state === "ask" ? `<button class="primary" data-allow="${name}">${T.allow}</button>`
+        : state === "off" ? `<span class="tag bad">${T.off}</span>`
+        : `<button data-open="${name}">${T.openSystemSettings}</button>`;
+    }
+    row.querySelector(".help").textContent = (PERM_HELP[name] || {})[state] || "";
+  }
+}
+
+document.addEventListener("click", e => {
+  const allow = e.target.dataset && e.target.dataset.allow;
+  const open = e.target.dataset && e.target.dataset.open;
+  if (allow) { asked[allow] = true; send({ type: "allow", what: allow }); render(); }
+  if (open) send({ type: "open_privacy", what: open });
+});
+
+// ---- the rest of the pages
+
+// The Clicks in use with their status: the left one only if turned on in Settings.
+function clicks() {
+  const used = status.click_left != null ? [["left", status.click_left]] : [];
+  return [...used, ["right", status.click]];
+}
+function clicksConnected() { return clicks().every(([, s]) => s === "connected"); }
+function battery(side) { return status.batteries[side]; }  // only if connected
+
+function renderClick() {
+  const list = clicks();
+  const both = list.length > 1;
+  const sides = list.map(([side]) => side).join();
+  if ($("click-pucks").dataset.sides !== sides) {  // redrawn only if it changes, so lit buttons don't go out
+    $("click-pucks").dataset.sides = sides;
+    $("click-pucks").innerHTML = list.map(([side]) =>
+      `<div>${puck(side, both ? 120 : 170)}${both ? `<div class="puck-label" data-label="${side}"></div>` : ""}</div>`).join("");
+  }
+  for (const [side, s] of list) {
+    const label = document.querySelector(`[data-label="${side}"]`);
+    if (!label) continue;
+    label.className = "puck-label" + (s === "connected" ? " ok" : "");
+    const level = battery(side);
+    label.innerHTML = SIDE_NAMES[side] + (s === "connected" ? " ✓" : "") + (level != null ? batteryHtml(level) : "");
+  }
+  $("click-lead").textContent = both ? T.pressBoth : T.pressOne;
+
+  const waiting = list.filter(([, s]) => s !== "connected");
+  const connected = waiting.length === 0;
+  const someConnected = waiting.length < list.length;
+  const missing = both && waiting.length === 1 ? T.sideWords[waiting[0][0]] : null;
+  $("click-state").textContent = connected ? (both ? T.clicksConnected : T.clickConnected)
+    : someConnected && missing ? fmt(T.waitingSide, { side: missing }) : T.waiting;
+  const first = waiting.length ? waiting[0][1] : "connected";
+  $("click-detail").textContent =
+    status.permissions.bluetooth !== "ok" ? T.allowBluetoothFirst
+    : connected ? (!both && battery("right") != null ? fmt(T.battery, { level: battery("right") }) + " " : "") + T.tryButtons
+    : someConnected ? fmt(T.pressOnSide, { side: missing })
+    : first === "waiting" ? T.led
+    : STATUS_TEXT[first] ?? first;
+}
+
+function renderMyWhoosh() {
+  $("mw-tag").className = "tag " + (status.mywhoosh ? "ok" : "off");
+  $("mw-tag").textContent = status.mywhoosh ? T.mwConnected : T.mwWaiting;
+  $("mw-detail").textContent = status.mywhoosh ? T.mwViaNetwork
+    : status.permissions.network !== "ok" ? T.mwNeedsNetwork
+    : T.mwFollowSteps;
+}
+
+function renderSummary() {
+  const items = [
+    ["📶", T.bluetooth, status.permissions.bluetooth === "ok"],
+    ["🌐", T.localNetwork, status.permissions.network === "ok"],
+    ["⌨️", T.accessibility, status.permissions.accessibility === "ok"],
+    ["🎮", "Click", clicksConnected()],
+    ["🚴", "MyWhoosh", status.mywhoosh],
+  ];
+  $("summary").innerHTML = items.map(([icon, name, ok]) =>
+    `<div class="row"><div class="icon">${icon}</div><div class="what"><b>${name}</b></div>
+     <span class="tag ${ok ? "ok" : "off"}">${ok ? T.ready : T.todo}</span></div>`).join("");
+  const missing = items.filter(i => !i[2]).length;
+  $("done-lead").textContent = missing === 0 ? T.doneAll : T.doneSome;
+}
+
+function render() {
+  if (!status) return;
+  renderPermissions(); renderClick(); renderMyWhoosh(); renderSummary();
+}
+
+window.c2wInit = (info) => {
+  const lower = s => s.charAt(0).toLowerCase() + s.slice(1);
+  const key = b => {
+    const more = [b.held && T.heldWhile,
+                  b.double && fmt(T.doubleClick, { action: lower(b.double) }),
+                  b.long && fmt(T.longPress, { action: lower(b.long) })].filter(Boolean);
+    return `<div class="key"><span class="badge ${b.name}">${b.label}</span>
+            <div><b>${b.single}</b>${more.map(m => `<span>${m}</span>`).join("")}</div></div>`;
+  };
+  const sides = ["left", "right"].filter(side => info.buttons.some(b => b.side === side));
+  const both = sides.length > 1;
+  $("keys").innerHTML = sides.map(side =>
+    `<div class="side${both ? " stacked" : ""}"><div>${puck(side, both ? 96 : 150)}${both ? `<div class="puck-label">${SIDE_NAMES[side]}</div>` : ""}</div>
+     <div class="keys">${info.buttons.filter(b => b.side === side).map(key).join("")}</div></div>`).join("");
+  $("login-row").hidden = !info.login_available;
+  $("login").checked = info.login_enabled;
+  requestAnimationFrame(reportHeight);
+};
+window.c2wStatus = (s) => { status = s; render(); };
+window.c2wPressed = lightKey;
+
+$("next").addEventListener("click", () => current === pages.length - 1 ? send({ type: "finish" }) : show(current + 1));
+$("back").addEventListener("click", () => show(current - 1));
+$("settings").addEventListener("click", () => send({ type: "open_settings" }));
+$("login").addEventListener("change", e => send({ type: "login", enabled: e.target.checked }));
+show(0);
+send({ type: "ready" });
+</script>
+</body>
+</html>

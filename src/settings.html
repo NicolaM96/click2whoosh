@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ _("Settings") }}</title>
+{% include "common.html" %}
+<style>
+body { padding: 20px 22px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); }
+.chip.off { color: var(--off); background: var(--off-bg); }
+.layout { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.card.click { display: flex; flex-direction: column; justify-content: center; }
+svg .btn { cursor: pointer; }
+svg .btn:hover circle, svg .btn:hover rect { stroke: var(--accent); }
+svg .btn.selected circle, svg .btn.selected rect { stroke: var(--accent); stroke-width: 3; fill: var(--accent-bg); }
+svg .btn.color.selected circle { stroke: var(--accent); stroke-width: 3.5; }
+h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 14px; }
+.row { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 10px; margin-bottom: 10px; }
+.row label { color: var(--muted); }
+select, input[type=number] { font: inherit; width: 100%; padding: 4px 6px; }
+input[type=number] { width: 90px; }
+.adv input[type=checkbox] { justify-self: start; margin-left: 2px; }
+/* always one line: the height of the boxes must not change with the hint text */
+.hint { color: var(--muted); font-size: 12px; height: 18px; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.advanced { margin-top: 18px; padding: 12px 16px; }
+summary { cursor: pointer; color: var(--muted); font-weight: 500; }
+.adv { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 10px 16px;
+  align-items: center; margin-top: 12px; }
+.adv .note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
+.adv .actions { grid-column: 1 / -1; }
+.footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: var(--muted); font-size: 12px; }
+.saved { opacity: 0; transition: opacity .3s; color: var(--ok); }
+.saved.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="chips" id="chips"></div>
+
+<div class="layout">
+  <div class="card click">
+    <div class="pucks" id="pucks"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="title"></h2>
+    <p class="sub">{{ _("Choose a button on the drawing, or press it on the Click: while this window is in front, the buttons only select.") }}</p>
+    <div class="row"><label for="single">{{ _("Single click") }}</label><select id="single"></select></div>
+    <div class="row"><label for="double">{{ _("Double click") }}</label><select id="double"></select></div>
+    <div class="row"><label for="long">{{ _("Press and hold") }}</label><select id="long"></select></div>
+    <div class="hint" id="hint"></div>
+    <div class="footer"><span></span><span class="saved" id="saved">{{ _("Saved") }}</span></div>
+  </div>
+</div>
+
+<div class="card advanced">
+  <details>
+    <summary>{{ _("Advanced") }}</summary>
+    <div class="adv">
+      <span>{{ _("Long press after (ms)") }}</span><input type="number" min="200" max="3000" step="50" data-key="long_press_ms">
+      <span>{{ _("Double-click window (ms)") }}</span><input type="number" min="100" max="1000" step="25" data-key="double_press_ms">
+      <span>{{ _("Battery warning below (%)") }}</span><input type="number" min="0" max="100" step="5" data-key="battery_warning">
+      <span>{{ _("Sound on every shift") }}</span><input type="checkbox" data-key="shift_sound">
+      <span>{{ _("Also use the left Click") }}</span><input type="checkbox" data-key="use_left_side">
+      <span></span><span></span>
+      <span class="note">{{ _("Unless Zwift has unlocked it, the left Click stops sending buttons about a minute after it starts, so the app restarts it every minute or so: each restart pauses it for about 4 seconds, and its battery runs down faster than the right one's.") }}</span>
+      <span></span><span></span>
+      <span class="note">{{ _("If you haven't changed the buttons, they switch by themselves to the suitable ones (with both Clicks: gears on + and −, steering on the arrows). Connecting the left Click takes effect from the next launch.") }}</span>
+      <div class="actions"><button id="open-file">{{ _("Open configuration file") }}</button></div>
+    </div>
+  </details>
+</div>
+
+<script>
+const T = {
+  nothing: {{ _("Nothing")|tojson }},
+  repeatClick: {{ _("Repeat the click")|tojson }},
+  button: {{ _("Button {label}")|tojson }},
+  hintHeld: {{ _("Active while held: no double click or long press.")|tojson }},
+  hintDouble: {{ _("With double click, the single click fires after a short delay.")|tojson }},
+  hintLong: {{ _("With long press, the click fires when you release.")|tojson }},
+  chip: {{ _("{click} {status}")|tojson }},
+};
+
+document.getElementById("pucks").innerHTML = ["left", "right"].map(side =>
+  `<div id="${side}-puck">${puck(side, 170)}<div class="puck-label">${SIDE_NAMES[side]}</div></div>`).join("");
+
+let state = null;
+let selected = "plus";
+
+function optionsHtml(current, { allowHeld, extra }) {
+  let html = `<option value="none">${T.nothing}</option>`;
+  for (const [value, label] of extra || []) html += `<option value="${value}">${label}</option>`;
+  const groups = {};
+  for (const a of state.actions) {
+    if (!allowHeld && a.held) continue;
+    (groups[a.group] ||= []).push(a);
+  }
+  for (const [group, actions] of Object.entries(groups)) {
+    html += `<optgroup label="${group}">`;
+    for (const a of actions) html += `<option value="${a.spec}">${a.label}</option>`;
+    html += `</optgroup>`;
+  }
+  if (current && current !== "none" && current !== "repeat" && !state.actions.some(a => a.spec === current)) {
+    html += `<option value="${current}">${current}</option>`;
+  }
+  return html;
+}
+
+function renderButton() {
+  const b = state.buttons[selected];
+  document.getElementById("title").textContent = fmt(T.button, { label: state.labels[selected] });
+  const single = document.getElementById("single");
+  const double = document.getElementById("double");
+  const long = document.getElementById("long");
+  const held = b.held;
+  const canRepeat = b.repeatable;
+
+  single.innerHTML = optionsHtml(b.single, { allowHeld: true });
+  double.innerHTML = optionsHtml(b.double, { allowHeld: false });
+  long.innerHTML = optionsHtml(b.long, { allowHeld: false, extra: canRepeat ? [["repeat", T.repeatClick]] : [] });
+  single.value = b.single; double.value = b.double; long.value = b.long;
+  double.disabled = long.disabled = held;
+
+  let hint = "";
+  if (held) hint = T.hintHeld;
+  else if (b.double !== "none") hint = T.hintDouble;
+  else if (b.long !== "none" && b.long !== "repeat") hint = T.hintLong;
+  const hintEl = document.getElementById("hint");
+  hintEl.textContent = hint;
+  hintEl.title = hint;
+
+  document.querySelectorAll(".btn").forEach(el => el.classList.toggle("selected", el.dataset.name === selected));
+}
+
+function renderStatus() {
+  const s = state.status;  // the Clicks' status comes as a code (see STATUS_TEXT)
+  const clicks = [...(s.click_left != null ? [["left", s.click_left]] : []), ["right", s.click]];
+  document.getElementById("chips").innerHTML = clicks.map(([side, st]) => {
+    const battery = s.batteries[side] != null ? batteryHtml(s.batteries[side]) : "";
+    const text = fmt(T.chip, { click: CLICK_NAMES[side], status: STATUS_TEXT[st] ?? st });
+    return `<span class="chip ${st === "connected" ? "ok" : "off"}">${text}${battery}</span>`;
+  }).join("");
+}
+
+function renderGeneral() {
+  document.querySelectorAll("[data-key]").forEach(el => {
+    const v = state.general[el.dataset.key];
+    if (el.type === "checkbox") el.checked = !!v; else el.value = v;
+  });
+  document.getElementById("left-puck").hidden = !state.general.use_left_side;
+  if (!state.general.use_left_side && !(selected in { plus: 1, y: 1, z: 1, a: 1, b: 1 })) selected = "plus";
+}
+
+window.c2wUpdate = (newState) => {
+  state = newState;
+  renderGeneral(); renderButton(); renderStatus();
+  requestAnimationFrame(reportHeight);
+};
+
+window.c2wStatus = (status) => {
+  if (!state) return;
+  state.status = status;
+  renderStatus();
+};
+
+window.c2wPressed = (name, pressed, select) => {
+  lightKey(name, pressed);
+  // It always lights up; it becomes the selected button only if the window is in front.
+  if (pressed && select && name !== selected) { selected = name; renderButton(); }
+};
+
+window.c2wSaved = () => {
+  const el = document.getElementById("saved");
+  el.classList.add("show");
+  clearTimeout(window._savedTimer);
+  window._savedTimer = setTimeout(() => el.classList.remove("show"), 1200);
+};
+
+document.querySelectorAll(".btn").forEach(el => el.addEventListener("click", () => {
+  selected = el.dataset.name; renderButton();
+}));
+for (const field of ["single", "double", "long"]) {
+  document.getElementById(field).addEventListener("change", e =>
+    send({ type: "button", name: selected, field, value: e.target.value }));
+}
+document.querySelectorAll("[data-key]").forEach(el => el.addEventListener("change", () => {
+  const value = el.type === "checkbox" ? el.checked : Number(el.value);
+  send({ type: "general", key: el.dataset.key, value });
+}));
+document.getElementById("open-file").addEventListener("click", () => send({ type: "open_file" }));
+document.querySelector("details").addEventListener("toggle", () => requestAnimationFrame(reportHeight));
+send({ type: "ready" });
+</script>
+</body>
+</html>

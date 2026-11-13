@@ -1,0 +1,40 @@
+Click2Whoosh — usa lo Zwift Click v2 con MyWhoosh sul Mac
+
+INSTALLAZIONE
+1. Trascina Click2Whoosh nella cartella Applicazioni.
+2. Aprila con un doppio clic. La prima volta macOS dice che non può verificare lo
+   sviluppatore (l'app non è firmata da Apple): premi "Fine".
+3. Apri Impostazioni di Sistema → Privacy e sicurezza, scorri in fondo fino al messaggio
+   su Click2Whoosh e premi "Apri comunque", poi conferma con la password.
+   Va fatto solo la prima volta.
+
+In alto a destra, nella barra dei menu, compare una bicicletta: è Click2Whoosh.
+Non c'è nessuna finestra e niente icona nel Dock.
+
+PRIMO AVVIO
+Si apre la finestra "Benvenuto in Click2Whoosh", che ti guida passo passo:
+1. Permessi: premi "Consenti" su Bluetooth, Rete locale e Accessibilità e rispondi sì
+   alle richieste di macOS. Per l'Accessibilità si aprono le Impostazioni di Sistema:
+   attiva Click2Whoosh nell'elenco e torna alla finestra.
+2. Click: premi un tasto qualsiasi del Click, si collega in qualche secondo.
+3. MyWhoosh: Connessioni → icona OpenBikeControl in alto a destra → Click2Whoosh → Sì.
+   BikeControl deve essere chiuso.
+4. Cosa fanno i tasti, il menu e le impostazioni.
+Le spunte diventano verdi da sole. La guida si riapre dal menu della bicicletta:
+"Guida introduttiva…".
+
+Per cambiare cosa fa ogni tasto: menu della bicicletta → Impostazioni…
+Per farla partire da sola all'accensione: menu della bicicletta → Avvia con il Mac.
+
+SE QUALCOSA NON VA
+- Il Click non si collega: Impostazioni di Sistema → Privacy e sicurezza → Bluetooth,
+  controlla che Click2Whoosh sia attivo. Chiudi BikeControl e l'app Zwift.
+- MyWhoosh non vede Click2Whoosh: Privacy e sicurezza → Rete locale, attiva
+  Click2Whoosh; Mac e MyWhoosh devono stare sulla stessa rete.
+- La musica (tasto Y) non va: Privacy e sicurezza → Accessibilità, attiva Click2Whoosh.
+  Se c'è già ma non funziona (succede dopo un aggiornamento), toglilo con − e riaggiungilo.
+- Registro di cosa succede: menu della bicicletta → Apri registro.
+- Il Click sinistro si ferma per circa 4 secondi ogni minuto circa e la sua pila si consuma più in
+  fretta di quella del destro: se Zwift non l'ha sbloccato, smette di mandare i tasti un minuto dopo
+  l'avvio, quindi l'app lo riavvia. Puoi spegnerlo da Impostazioni → Avanzate → Usa anche il Click sinistro.
+- Non aggiornare il firmware del Click: potrebbe cambiare il protocollo.

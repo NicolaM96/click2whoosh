@@ -1,0 +1,567 @@
+# Translations template for Click2Whoosh.
+# Copyright (C) 2026 Nicola Marmai
+# This file is distributed under the same license as the Click2Whoosh project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Click2Whoosh VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-11 22:10+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "peace"
+msgstr ""
+
+msgid "wave"
+msgstr ""
+
+msgid "fist bump"
+msgstr ""
+
+msgid "dab"
+msgstr ""
+
+msgid "elbow bump"
+msgstr ""
+
+msgid "cheers"
+msgstr ""
+
+msgid "thumbs up"
+msgstr ""
+
+msgid "Music"
+msgstr ""
+
+msgid "Shift up"
+msgstr ""
+
+msgid "Shift down"
+msgstr ""
+
+msgid "Steer left"
+msgstr ""
+
+msgid "Steer right"
+msgstr ""
+
+msgid "Play/pause"
+msgstr ""
+
+msgid "Next track"
+msgstr ""
+
+msgid "Previous track"
+msgstr ""
+
+msgid "Volume up"
+msgstr ""
+
+msgid "Volume down"
+msgstr ""
+
+msgid "Mac"
+msgstr ""
+
+msgid "Mac screenshot"
+msgstr ""
+
+msgid "Keyboard"
+msgstr ""
+
+msgid "U key (minimal interface)"
+msgstr ""
+
+#, python-brace-format
+msgid "Emote {n}: {name}"
+msgstr ""
+
+#, python-brace-format
+msgid "Key {key}"
+msgstr ""
+
+#, python-brace-format
+msgid "Hold {key}"
+msgstr ""
+
+msgid "Nothing"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown key in '{spec}'. Available: {available}"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown media key in '{spec}'. Available: {available}"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown command in '{spec}'. Available: {available}"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown action: '{spec}'"
+msgstr ""
+
+msgid "connected"
+msgstr ""
+
+msgid "waiting (press a button)"
+msgstr ""
+
+msgid "Bluetooth off"
+msgstr ""
+
+msgid "Bluetooth permission missing"
+msgstr ""
+
+msgid "Bluetooth unavailable"
+msgstr ""
+
+msgid "Bluetooth not used"
+msgstr ""
+
+msgid "Left Click"
+msgstr ""
+
+msgid "Right Click"
+msgstr ""
+
+#, python-brace-format
+msgid "{key} must be between {low} and {high}"
+msgstr ""
+
+msgid "double click"
+msgstr ""
+
+msgid "long press"
+msgstr ""
+
+#, python-brace-format
+msgid "{button} → highlight only (window in front)"
+msgstr ""
+
+#, python-brace-format
+msgid "{button} → nothing"
+msgstr ""
+
+#, python-brace-format
+msgid "{click} battery at {level}%"
+msgstr ""
+
+msgid "Click firmware differs from the tested one"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"{click}: firmware {version}, tested only with {tested}. If something doesn't work, report it on GitHub with"
+" the log attached (menu → Open Log)."
+msgstr ""
+
+msgid "Settings…"
+msgstr ""
+
+msgid "Getting Started…"
+msgstr ""
+
+msgid "Open Log"
+msgstr ""
+
+msgid "Launch at Login"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+#, python-brace-format
+msgid "{click}: {status}"
+msgstr ""
+
+#, python-brace-format
+msgid "Last: {button}"
+msgstr ""
+
+msgid ""
+"Only available in the Click2Whoosh app: launched from Terminal, macOS would not give it the Bluetooth "
+"permission."
+msgstr ""
+
+msgid "This change takes effect the next time the app starts"
+msgstr ""
+
+msgid "MyWhoosh reconnected"
+msgstr ""
+
+msgid "Commands go over the network again"
+msgstr ""
+
+msgid "MyWhoosh disconnected from the network"
+msgstr ""
+
+msgid "Gears and steering now go through the keyboard: keep MyWhoosh in front"
+msgstr ""
+
+msgid "(from Terminal)"
+msgstr ""
+
+#, python-brace-format
+msgid "Invalid configuration, using the default one: {error}"
+msgstr ""
+
+msgid "Left"
+msgstr ""
+
+msgid "Right"
+msgstr ""
+
+msgid "Welcome"
+msgstr ""
+
+msgid "Welcome to Click2Whoosh"
+msgstr ""
+
+msgid ""
+"With Click2Whoosh, the Zwift Click v2 controls MyWhoosh on your Mac: gears, steering and music, no "
+"subscription needed."
+msgstr ""
+
+msgid "Permissions"
+msgstr ""
+
+msgid "Three macOS authorizations, one at a time."
+msgstr ""
+
+msgid "Connections"
+msgstr ""
+
+msgid "The Click over Bluetooth, MyWhoosh over the network."
+msgstr ""
+
+msgid "How to use it"
+msgstr ""
+
+msgid "What the buttons do, the menu and the settings."
+msgstr ""
+
+msgid ""
+"It takes a couple of minutes. You can review this guide any time from the cyclist icon in the menu bar: "
+"“Getting Started…”."
+msgstr ""
+
+msgid "Press “Allow” on each row: macOS opens its own window, answer “Allow” there too."
+msgstr ""
+
+msgid "Bluetooth"
+msgstr ""
+
+msgid "To connect to the Click and read its buttons."
+msgstr ""
+
+msgid "Local Network"
+msgstr ""
+
+msgid "So MyWhoosh can find Click2Whoosh and receive gears and steering."
+msgstr ""
+
+msgid "Accessibility"
+msgstr ""
+
+msgid "For the music buttons and, if MyWhoosh is not connected over the network, to press its keys for you."
+msgstr ""
+
+msgid "Connect the Click"
+msgstr ""
+
+msgid "Connect MyWhoosh"
+msgstr ""
+
+msgid "Do this once: after that MyWhoosh reconnects by itself."
+msgstr ""
+
+msgid "If you used BikeControl, close it."
+msgstr ""
+
+msgid "Open MyWhoosh and go to the <b>Connections</b> screen."
+msgstr ""
+
+msgid "Click the <b>OpenBikeControl</b> icon at the top right."
+msgstr ""
+
+msgid ""
+"Choose <b>Click2Whoosh</b>. MyWhoosh asks whether to connect (“OpenBikeControl Instance Found”): press "
+"<b>YES</b>."
+msgstr ""
+
+msgid "You can also do this later: Click2Whoosh keeps listening for as long as it is open."
+msgstr ""
+
+msgid "The buttons"
+msgstr ""
+
+msgid ""
+"This is how they are set now. A button can do one thing with a click, another with a double click and "
+"another one if you hold it."
+msgstr ""
+
+msgid ""
+"Try them now: with this window in front, the buttons light up on the drawing and send nothing to MyWhoosh "
+"or to the music."
+msgstr ""
+
+msgid ""
+"To save battery, the Click turns itself off when you are not using it and MyWhoosh is closed. The first "
+"button you press wakes it up (that press is lost)."
+msgstr ""
+
+msgid "Menu and settings"
+msgstr ""
+
+msgid ""
+"Click2Whoosh has no windows or Dock icon: you will find it in the menu bar at the top right, as a cyclist. "
+"The icon is solid when the Click is connected and lighter when it is waiting for it. Click it to open the "
+"menu."
+msgstr ""
+
+msgid ""
+"To change what the buttons do: choose a button (by clicking it on the drawing or pressing it on the Click) "
+"and decide what it does with a click, a double click and a long press. It saves by itself."
+msgstr ""
+
+msgid "Advanced"
+msgstr ""
+
+msgid ""
+"At the bottom of Settings: how long a long press lasts, how fast to double-click, at what percentage to "
+"warn about a low battery, the sound on every shift and the use of the left Click."
+msgstr ""
+
+msgid "Click2Whoosh starts by itself when the Mac starts."
+msgstr ""
+
+msgid "Reopens this guide."
+msgstr ""
+
+msgid "The list of what happened (connections, buttons, errors): useful if something goes wrong."
+msgstr ""
+
+msgid "Closes Click2Whoosh and switches the Click off."
+msgstr ""
+
+msgid "All set"
+msgstr ""
+
+msgid "Launch Click2Whoosh at login"
+msgstr ""
+
+msgid "Back"
+msgstr ""
+
+msgid "Open Settings"
+msgstr ""
+
+msgid "Let's go"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Done"
+msgstr ""
+
+msgid "✓ Allowed"
+msgstr ""
+
+msgid "Allow"
+msgstr ""
+
+msgid "Off"
+msgstr ""
+
+msgid "Open System Settings"
+msgstr ""
+
+msgid "Permission denied: press “Open System Settings” and turn on the Click2Whoosh switch."
+msgstr ""
+
+msgid "The Mac's Bluetooth is off: turn it on from Control Center."
+msgstr ""
+
+msgid ""
+"Answer “Allow” in the macOS window. If you answered no: System Settings → Privacy & Security → Local "
+"Network → turn on Click2Whoosh."
+msgstr ""
+
+msgid ""
+"In System Settings, under Accessibility, turn on the Click2Whoosh switch (if it is not there, add it with "
+"+) and come back here. If it is already on but the checkmark stays gray, remove it with − and add it again."
+msgstr ""
+
+msgid "Press any button on each Click: it wakes up and connects within a few seconds."
+msgstr ""
+
+msgid "Press any button on the Click: it wakes up and connects within a few seconds."
+msgstr ""
+
+msgid "✓ Clicks connected"
+msgstr ""
+
+msgid "✓ Click connected"
+msgstr ""
+
+#, python-brace-format
+msgid "Waiting for the {side} Click…"
+msgstr ""
+
+msgid "Waiting for the Click…"
+msgstr ""
+
+msgid "First allow Bluetooth (previous step)."
+msgstr ""
+
+#, python-brace-format
+msgid "Battery {level}%."
+msgstr ""
+
+msgid "Press the buttons: they light up on the drawing."
+msgstr ""
+
+#, python-brace-format
+msgid "Press a button on the {side} Click too."
+msgstr ""
+
+msgid "The Click's LED blinks while it connects."
+msgstr ""
+
+msgid "left"
+msgstr ""
+
+msgid "right"
+msgstr ""
+
+msgid "✓ Connected"
+msgstr ""
+
+msgid "Waiting"
+msgstr ""
+
+msgid "Gears and steering reach MyWhoosh over the network."
+msgstr ""
+
+msgid "The Local Network permission is needed (Permissions step)."
+msgstr ""
+
+msgid "Follow the steps above in MyWhoosh."
+msgstr ""
+
+msgid "✓ Ready"
+msgstr ""
+
+msgid "To do"
+msgstr ""
+
+msgid "Enjoy the ride! If you want to change what the buttons do, open Settings."
+msgstr ""
+
+msgid ""
+"You can do what is missing later too: go back with Back, or reopen the guide from the cyclist icon in the "
+"menu bar."
+msgstr ""
+
+msgid "Lasts while you hold it"
+msgstr ""
+
+#, python-brace-format
+msgid "Double click: {action}"
+msgstr ""
+
+#, python-brace-format
+msgid "Press and hold: {action}"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid ""
+"Choose a button on the drawing, or press it on the Click: while this window is in front, the buttons only "
+"select."
+msgstr ""
+
+msgid "Single click"
+msgstr ""
+
+msgid "Double click"
+msgstr ""
+
+msgid "Press and hold"
+msgstr ""
+
+msgid "Saved"
+msgstr ""
+
+msgid "Long press after (ms)"
+msgstr ""
+
+msgid "Double-click window (ms)"
+msgstr ""
+
+msgid "Battery warning below (%)"
+msgstr ""
+
+msgid "Sound on every shift"
+msgstr ""
+
+msgid "Also use the left Click"
+msgstr ""
+
+msgid ""
+"Unless Zwift has unlocked it, the left Click stops sending buttons about a minute after it starts, so the "
+"app restarts it every minute or so: each restart pauses it for about 4 seconds, and its battery runs down "
+"faster than the right one's."
+msgstr ""
+
+msgid ""
+"If you haven't changed the buttons, they switch by themselves to the suitable ones (with both Clicks: gears"
+" on + and −, steering on the arrows). Connecting the left Click takes effect from the next launch."
+msgstr ""
+
+msgid "Open configuration file"
+msgstr ""
+
+msgid "Repeat the click"
+msgstr ""
+
+#, python-brace-format
+msgid "Button {label}"
+msgstr ""
+
+msgid "Active while held: no double click or long press."
+msgstr ""
+
+msgid "With double click, the single click fires after a short delay."
+msgstr ""
+
+msgid "With long press, the click fires when you release."
+msgstr ""
+
+#, python-brace-format
+msgid "{click} {status}"
+msgstr ""
+
+msgid "repeats"
+msgstr ""
+
+msgid "Click2Whoosh – Settings"
+msgstr ""
+
+#, python-brace-format
+msgid "Invalid setting: {error}"
+msgstr ""
+

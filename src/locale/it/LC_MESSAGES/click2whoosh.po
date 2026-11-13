@@ -1,0 +1,602 @@
+# Italian translations for Click2Whoosh.
+# Copyright (C) 2026 Nicola Marmai
+# This file is distributed under the same license as the Click2Whoosh project.
+# Nicola Marmai, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Click2Whoosh 1.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-11 22:10+0100\n"
+"PO-Revision-Date: 2026-11-05 15:51+0100\n"
+"Last-Translator: Nicola Marmai\n"
+"Language: it\n"
+"Language-Team: Italian\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "peace"
+msgstr "pace"
+
+msgid "wave"
+msgstr "saluto"
+
+msgid "fist bump"
+msgstr "pugno"
+
+msgid "dab"
+msgstr "dab"
+
+msgid "elbow bump"
+msgstr "gomitata"
+
+msgid "cheers"
+msgstr "brindisi"
+
+msgid "thumbs up"
+msgstr "pollice su"
+
+msgid "Music"
+msgstr "Musica"
+
+msgid "Shift up"
+msgstr "Marcia su"
+
+msgid "Shift down"
+msgstr "Marcia giù"
+
+msgid "Steer left"
+msgstr "Sterza a sinistra"
+
+msgid "Steer right"
+msgstr "Sterza a destra"
+
+msgid "Play/pause"
+msgstr "Play/pausa"
+
+msgid "Next track"
+msgstr "Brano successivo"
+
+msgid "Previous track"
+msgstr "Brano precedente"
+
+msgid "Volume up"
+msgstr "Volume su"
+
+msgid "Volume down"
+msgstr "Volume giù"
+
+msgid "Mac"
+msgstr "Mac"
+
+msgid "Mac screenshot"
+msgstr "Screenshot del Mac"
+
+msgid "Keyboard"
+msgstr "Tastiera"
+
+msgid "U key (minimal interface)"
+msgstr "Tasto U (interfaccia minimale)"
+
+#, python-brace-format
+msgid "Emote {n}: {name}"
+msgstr "Emote {n}: {name}"
+
+#, python-brace-format
+msgid "Key {key}"
+msgstr "Tasto {key}"
+
+#, python-brace-format
+msgid "Hold {key}"
+msgstr "Tieni premuto {key}"
+
+msgid "Nothing"
+msgstr "Niente"
+
+#, python-brace-format
+msgid "Unknown key in '{spec}'. Available: {available}"
+msgstr "Tasto sconosciuto in '{spec}'. Disponibili: {available}"
+
+#, python-brace-format
+msgid "Unknown media key in '{spec}'. Available: {available}"
+msgstr "Tasto multimediale sconosciuto in '{spec}'. Disponibili: {available}"
+
+#, python-brace-format
+msgid "Unknown command in '{spec}'. Available: {available}"
+msgstr "Comando sconosciuto in '{spec}'. Disponibili: {available}"
+
+#, python-brace-format
+msgid "Unknown action: '{spec}'"
+msgstr "Azione sconosciuta: '{spec}'"
+
+msgid "connected"
+msgstr "collegato"
+
+msgid "waiting (press a button)"
+msgstr "in attesa (premi un tasto)"
+
+msgid "Bluetooth off"
+msgstr "Bluetooth spento"
+
+msgid "Bluetooth permission missing"
+msgstr "permesso Bluetooth mancante"
+
+msgid "Bluetooth unavailable"
+msgstr "Bluetooth non disponibile"
+
+msgid "Bluetooth not used"
+msgstr "Bluetooth non usato"
+
+msgid "Left Click"
+msgstr "Click sinistro"
+
+msgid "Right Click"
+msgstr "Click destro"
+
+#, python-brace-format
+msgid "{key} must be between {low} and {high}"
+msgstr "{key} deve stare tra {low} e {high}"
+
+msgid "double click"
+msgstr "doppio clic"
+
+msgid "long press"
+msgstr "pressione lunga"
+
+#, python-brace-format
+msgid "{button} → highlight only (window in front)"
+msgstr "{button} → solo illuminato (finestra in primo piano)"
+
+#, python-brace-format
+msgid "{button} → nothing"
+msgstr "{button} → niente"
+
+#, python-brace-format
+msgid "{click} battery at {level}%"
+msgstr "Batteria del {click} al {level}%"
+
+msgid "Click firmware differs from the tested one"
+msgstr "Firmware del Click diverso dal provato"
+
+#, python-brace-format
+msgid ""
+"{click}: firmware {version}, tested only with {tested}. If something doesn't work, report it on GitHub with"
+" the log attached (menu → Open Log)."
+msgstr ""
+"{click}: firmware {version}, provato solo con {tested}. Se qualcosa non funziona, segnalalo su GitHub "
+"allegando il registro (menu → Apri registro)."
+
+msgid "Settings…"
+msgstr "Impostazioni…"
+
+msgid "Getting Started…"
+msgstr "Guida introduttiva…"
+
+msgid "Open Log"
+msgstr "Apri registro"
+
+msgid "Launch at Login"
+msgstr "Avvia con il Mac"
+
+msgid "Quit"
+msgstr "Esci"
+
+#, python-brace-format
+msgid "{click}: {status}"
+msgstr "{click}: {status}"
+
+#, python-brace-format
+msgid "Last: {button}"
+msgstr "Ultimo: {button}"
+
+msgid ""
+"Only available in the Click2Whoosh app: launched from Terminal, macOS would not give it the Bluetooth "
+"permission."
+msgstr "Disponibile nell'app Click2Whoosh: quando la lanci da Terminale macOS non le darebbe il permesso Bluetooth."
+
+msgid "This change takes effect the next time the app starts"
+msgstr "Questa modifica vale dal prossimo avvio del programma"
+
+msgid "MyWhoosh reconnected"
+msgstr "MyWhoosh ricollegato"
+
+msgid "Commands go over the network again"
+msgstr "I comandi tornano via rete"
+
+msgid "MyWhoosh disconnected from the network"
+msgstr "MyWhoosh scollegato dalla rete"
+
+msgid "Gears and steering now go through the keyboard: keep MyWhoosh in front"
+msgstr "Marce e sterzo passano dalla tastiera: tieni MyWhoosh in primo piano"
+
+msgid "(from Terminal)"
+msgstr "(da Terminale)"
+
+#, python-brace-format
+msgid "Invalid configuration, using the default one: {error}"
+msgstr "Configurazione non valida, uso quella predefinita: {error}"
+
+msgid "Left"
+msgstr "Sinistro"
+
+msgid "Right"
+msgstr "Destro"
+
+msgid "Welcome"
+msgstr "Benvenuto"
+
+msgid "Welcome to Click2Whoosh"
+msgstr "Benvenuto in Click2Whoosh"
+
+msgid ""
+"With Click2Whoosh, the Zwift Click v2 controls MyWhoosh on your Mac: gears, steering and music, no "
+"subscription needed."
+msgstr "Con Click2Whoosh lo Zwift Click v2 comanda MyWhoosh sul Mac: marce, sterzo e musica, senza abbonamenti."
+
+msgid "Permissions"
+msgstr "Permessi"
+
+msgid "Three macOS authorizations, one at a time."
+msgstr "Tre autorizzazioni di macOS, una alla volta."
+
+msgid "Connections"
+msgstr "Collegamenti"
+
+msgid "The Click over Bluetooth, MyWhoosh over the network."
+msgstr "Il Click via Bluetooth, MyWhoosh via rete."
+
+msgid "How to use it"
+msgstr "Come si usa"
+
+msgid "What the buttons do, the menu and the settings."
+msgstr "Cosa fanno i tasti, il menu e le impostazioni."
+
+msgid ""
+"It takes a couple of minutes. You can review this guide any time from the cyclist icon in the menu bar: "
+"“Getting Started…”."
+msgstr ""
+"Bastano un paio di minuti. Puoi rivedere questa guida quando vuoi dall'icona del ciclista nella barra dei "
+"menu: “Guida introduttiva…”."
+
+msgid "Press “Allow” on each row: macOS opens its own window, answer “Allow” there too."
+msgstr "Premi “Consenti” su ogni riga: macOS apre una sua finestra, rispondi “Consenti” anche lì."
+
+msgid "Bluetooth"
+msgstr "Bluetooth"
+
+msgid "To connect to the Click and read its buttons."
+msgstr "Per collegarsi al Click e leggere i tasti."
+
+msgid "Local Network"
+msgstr "Rete locale"
+
+msgid "So MyWhoosh can find Click2Whoosh and receive gears and steering."
+msgstr "Perché MyWhoosh trovi Click2Whoosh e riceva marce e sterzo."
+
+msgid "Accessibility"
+msgstr "Accessibilità"
+
+msgid "For the music buttons and, if MyWhoosh is not connected over the network, to press its keys for you."
+msgstr "Per i tasti della musica e, se MyWhoosh non è collegato in rete, per premere i suoi tasti al posto tuo."
+
+msgid "Connect the Click"
+msgstr "Collega il Click"
+
+msgid "Connect MyWhoosh"
+msgstr "Collega MyWhoosh"
+
+msgid "Do this once: after that MyWhoosh reconnects by itself."
+msgstr "Da fare una volta sola: poi MyWhoosh si ricollega da solo."
+
+msgid "If you used BikeControl, close it."
+msgstr "Se usavi BikeControl, chiudilo."
+
+msgid "Open MyWhoosh and go to the <b>Connections</b> screen."
+msgstr "Apri MyWhoosh e vai nella schermata <b>Connessioni</b>."
+
+msgid "Click the <b>OpenBikeControl</b> icon at the top right."
+msgstr "Clicca l'icona <b>OpenBikeControl</b> in alto a destra."
+
+msgid ""
+"Choose <b>Click2Whoosh</b>. MyWhoosh asks whether to connect (“OpenBikeControl Instance Found”): press "
+"<b>YES</b>."
+msgstr ""
+"Scegli <b>Click2Whoosh</b>. MyWhoosh chiede in inglese se collegarsi (“OpenBikeControl Instance Found”): "
+"premi <b>YES</b>."
+
+msgid "You can also do this later: Click2Whoosh keeps listening for as long as it is open."
+msgstr "Puoi farlo anche più tardi: Click2Whoosh resta in ascolto finché è aperto."
+
+msgid "The buttons"
+msgstr "I tasti"
+
+msgid ""
+"This is how they are set now. A button can do one thing with a click, another with a double click and "
+"another one if you hold it."
+msgstr ""
+"Così sono impostati adesso. Un tasto può fare una cosa con un clic, un'altra con un doppio clic e un'altra "
+"ancora se lo tieni premuto."
+
+msgid ""
+"Try them now: with this window in front, the buttons light up on the drawing and send nothing to MyWhoosh "
+"or to the music."
+msgstr ""
+"Provali adesso: con questa finestra davanti i tasti si illuminano sul disegno e non mandano niente a "
+"MyWhoosh né alla musica."
+
+msgid ""
+"To save battery, the Click turns itself off when you are not using it and MyWhoosh is closed. The first "
+"button you press wakes it up (that press is lost)."
+msgstr ""
+"Per non consumare la pila, il Click si spegne da solo quando non lo usi e MyWhoosh è chiuso. Il primo tasto"
+" che premi lo riaccende (quel tasto va perso)."
+
+msgid "Menu and settings"
+msgstr "Menu e impostazioni"
+
+msgid ""
+"Click2Whoosh has no windows or Dock icon: you will find it in the menu bar at the top right, as a cyclist. "
+"The icon is solid when the Click is connected and lighter when it is waiting for it. Click it to open the "
+"menu."
+msgstr ""
+"Click2Whoosh non ha finestre né icona nel Dock: lo trovi nella barra dei menu in alto a destra, col "
+"ciclista. L'icona è piena quando il Click è collegato e più chiara quando lo sta aspettando. Cliccala per "
+"aprire il menu."
+
+msgid ""
+"To change what the buttons do: choose a button (by clicking it on the drawing or pressing it on the Click) "
+"and decide what it does with a click, a double click and a long press. It saves by itself."
+msgstr ""
+"Per cambiare cosa fanno i tasti: scegli un tasto (cliccandolo sul disegno o premendolo sul Click) e decidi "
+"cosa fa con clic, doppio clic e tenuto premuto. Si salva da solo."
+
+msgid "Advanced"
+msgstr "Avanzate"
+
+msgid ""
+"At the bottom of Settings: how long a long press lasts, how fast to double-click, at what percentage to "
+"warn about a low battery, the sound on every shift and the use of the left Click."
+msgstr ""
+"In fondo alle Impostazioni: quanto deve durare la pressione lunga, quanto velocemente fare il doppio clic, "
+"a che percentuale avvisare per la pila scarica, il suono a ogni cambio di marcia e l'uso del Click "
+"sinistro."
+
+msgid "Click2Whoosh starts by itself when the Mac starts."
+msgstr "Click2Whoosh parte da solo all'accensione."
+
+msgid "Reopens this guide."
+msgstr "Riapre questa guida."
+
+msgid "The list of what happened (connections, buttons, errors): useful if something goes wrong."
+msgstr "L'elenco di cosa è successo (collegamenti, tasti, errori): utile se qualcosa non va."
+
+msgid "Closes Click2Whoosh and switches the Click off."
+msgstr "Chiude Click2Whoosh e fa spegnere il Click."
+
+msgid "All set"
+msgstr "Tutto pronto"
+
+msgid "Launch Click2Whoosh at login"
+msgstr "Avvia Click2Whoosh con il Mac"
+
+msgid "Back"
+msgstr "Indietro"
+
+msgid "Open Settings"
+msgstr "Apri Impostazioni"
+
+msgid "Let's go"
+msgstr "Iniziamo"
+
+msgid "Next"
+msgstr "Avanti"
+
+msgid "Done"
+msgstr "Fine"
+
+msgid "✓ Allowed"
+msgstr "✓ Consentito"
+
+msgid "Allow"
+msgstr "Consenti"
+
+msgid "Off"
+msgstr "Spento"
+
+msgid "Open System Settings"
+msgstr "Apri Impostazioni di Sistema"
+
+msgid "Permission denied: press “Open System Settings” and turn on the Click2Whoosh switch."
+msgstr "Permesso negato: premi “Apri Impostazioni di Sistema” e accendi l'interruttore di Click2Whoosh."
+
+msgid "The Mac's Bluetooth is off: turn it on from Control Center."
+msgstr "Il Bluetooth del Mac è spento: accendilo dal Centro di Controllo."
+
+msgid ""
+"Answer “Allow” in the macOS window. If you answered no: System Settings → Privacy & Security → Local "
+"Network → turn on Click2Whoosh."
+msgstr ""
+"Rispondi “Consenti” nella finestra di macOS. Se avevi risposto di no: Impostazioni di Sistema → Privacy e "
+"sicurezza → Rete locale → attiva Click2Whoosh."
+
+msgid ""
+"In System Settings, under Accessibility, turn on the Click2Whoosh switch (if it is not there, add it with "
+"+) and come back here. If it is already on but the checkmark stays gray, remove it with − and add it again."
+msgstr ""
+"Nelle Impostazioni di Sistema, in Accessibilità, accendi l'interruttore di Click2Whoosh (se non c'è, "
+"aggiungilo con +) e torna qui. Se è già acceso ma la spunta resta grigia, toglilo con − e aggiungilo di "
+"nuovo."
+
+msgid "Press any button on each Click: it wakes up and connects within a few seconds."
+msgstr "Premi un tasto qualsiasi su ogni Click: si accende e si collega in qualche secondo."
+
+msgid "Press any button on the Click: it wakes up and connects within a few seconds."
+msgstr "Premi un tasto qualsiasi del Click: si accende e si collega in qualche secondo."
+
+msgid "✓ Clicks connected"
+msgstr "✓ Click collegati"
+
+msgid "✓ Click connected"
+msgstr "✓ Click collegato"
+
+#, python-brace-format
+msgid "Waiting for the {side} Click…"
+msgstr "In attesa del Click {side}…"
+
+msgid "Waiting for the Click…"
+msgstr "In attesa del Click…"
+
+msgid "First allow Bluetooth (previous step)."
+msgstr "Prima consenti il Bluetooth (passo precedente)."
+
+#, python-brace-format
+msgid "Battery {level}%."
+msgstr "Batteria {level}%."
+
+msgid "Press the buttons: they light up on the drawing."
+msgstr "Premi i tasti: si illuminano sul disegno."
+
+#, python-brace-format
+msgid "Press a button on the {side} Click too."
+msgstr "Premi un tasto anche sul Click {side}."
+
+msgid "The Click's LED blinks while it connects."
+msgstr "Il LED del Click lampeggia mentre si collega."
+
+msgid "left"
+msgstr "sinistro"
+
+msgid "right"
+msgstr "destro"
+
+msgid "✓ Connected"
+msgstr "✓ Collegato"
+
+msgid "Waiting"
+msgstr "In attesa"
+
+msgid "Gears and steering reach MyWhoosh over the network."
+msgstr "Marce e sterzo arrivano a MyWhoosh via rete."
+
+msgid "The Local Network permission is needed (Permissions step)."
+msgstr "Serve il permesso Rete locale (passo Permessi)."
+
+msgid "Follow the steps above in MyWhoosh."
+msgstr "Segui i passi qui sopra in MyWhoosh."
+
+msgid "✓ Ready"
+msgstr "✓ Pronto"
+
+msgid "To do"
+msgstr "Da fare"
+
+msgid "Enjoy the ride! If you want to change what the buttons do, open Settings."
+msgstr "Buona pedalata! Se vuoi cambiare cosa fanno i tasti, apri le Impostazioni."
+
+msgid ""
+"You can do what is missing later too: go back with Back, or reopen the guide from the cyclist icon in the "
+"menu bar."
+msgstr ""
+"Quello che manca puoi farlo anche dopo: torna con Indietro, oppure riapri la guida dall'icona del ciclista "
+"nella barra dei menu."
+
+msgid "Lasts while you hold it"
+msgstr "Dura finché lo tieni premuto"
+
+#, python-brace-format
+msgid "Double click: {action}"
+msgstr "Doppio clic: {action}"
+
+#, python-brace-format
+msgid "Press and hold: {action}"
+msgstr "Tenuto premuto: {action}"
+
+msgid "Settings"
+msgstr "Impostazioni"
+
+msgid ""
+"Choose a button on the drawing, or press it on the Click: while this window is in front, the buttons only "
+"select."
+msgstr ""
+"Scegli il tasto sul disegno, oppure premilo sul Click: finché questa finestra è in primo piano, i tasti "
+"selezionano soltanto."
+
+msgid "Single click"
+msgstr "Clic"
+
+msgid "Double click"
+msgstr "Doppio clic"
+
+msgid "Press and hold"
+msgstr "Tenuto premuto"
+
+msgid "Saved"
+msgstr "Salvato"
+
+msgid "Long press after (ms)"
+msgstr "Pressione lunga dopo (ms)"
+
+msgid "Double-click window (ms)"
+msgstr "Tempo per il doppio clic (ms)"
+
+msgid "Battery warning below (%)"
+msgstr "Avviso batteria sotto (%)"
+
+msgid "Sound on every shift"
+msgstr "Suono a ogni cambio marcia"
+
+msgid "Also use the left Click"
+msgstr "Usa anche il Click sinistro"
+
+msgid ""
+"Unless Zwift has unlocked it, the left Click stops sending buttons about a minute after it starts, so the "
+"app restarts it every minute or so: each restart pauses it for about 4 seconds, and its battery runs down "
+"faster than the right one's."
+msgstr ""
+"Se Zwift non l'ha sbloccato, il Click sinistro smette di mandare i tasti circa un minuto dopo l'avvio, "
+"quindi l'app lo riavvia ogni minuto circa: ogni riavvio lo ferma per circa 4 secondi e la sua pila si "
+"consuma più in fretta di quella del destro."
+
+msgid ""
+"If you haven't changed the buttons, they switch by themselves to the suitable ones (with both Clicks: gears"
+" on + and −, steering on the arrows). Connecting the left Click takes effect from the next launch."
+msgstr ""
+"Se non hai cambiato i tasti, passano da soli a quelli adatti (con i due Click: marce su + e −, sterzo sulle"
+" frecce). Il collegamento del sinistro vale dal prossimo avvio."
+
+msgid "Open configuration file"
+msgstr "Apri file di configurazione"
+
+msgid "Repeat the click"
+msgstr "Ripeti il clic"
+
+#, python-brace-format
+msgid "Button {label}"
+msgstr "Tasto {label}"
+
+msgid "Active while held: no double click or long press."
+msgstr "Attivo finché tieni premuto: niente doppio clic né pressione lunga."
+
+msgid "With double click, the single click fires after a short delay."
+msgstr "Col doppio clic, il clic singolo parte con un attimo di ritardo."
+
+msgid "With long press, the click fires when you release."
+msgstr "Con la pressione lunga, il clic parte quando rilasci."
+
+#, python-brace-format
+msgid "{click} {status}"
+msgstr "{click} {status}"
+
+msgid "repeats"
+msgstr "si ripete"
+
+msgid "Click2Whoosh – Settings"
+msgstr "Click2Whoosh – Impostazioni"
+
+#, python-brace-format
+msgid "Invalid setting: {error}"
+msgstr "Impostazione non valida: {error}"
+

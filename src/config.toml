@@ -1,0 +1,46 @@
+# Click2Whoosh configuration. Easier from the menu: Settings… (changes made there apply immediately).
+#
+# Possible actions:
+#   "obc:shift_up"     command sent to MyWhoosh over the network (OpenBikeControl): shift_up, shift_down,
+#                      steer_left, steer_right. MyWhoosh ignores the protocol's other commands.
+#                      If MyWhoosh is not connected over the network, gears and steering use the keyboard.
+#   "key:k"            presses and releases a key (only with MyWhoosh in front)
+#   "hold:a"           holds the key down for as long as you hold the button
+#   "media:playpause"  also: next, previous, volup, voldown
+#   "screenshot"       Mac screenshot, saved on the Desktop
+#   "none"             nothing
+#
+# MyWhoosh keys: K shift up, I shift down, A/D steer, U minimal interface, 1-7 emotes.
+
+[general]
+long_press_ms = 600          # a press longer than this counts as a "long press"
+double_press_ms = 300        # two clicks within this time are a "double click"
+battery_warning = 20         # warn when the battery drops below this percentage
+shift_sound = true           # sound on every shift: "Tink" up, "Pop" down (the Click v2 does not vibrate)
+use_left_side = true         # false to use the right Click only
+repeat_buttons = ["plus", "minus", "nav_up", "nav_down"]  # holding them repeats the action
+
+# Single click. Right Click: plus, a, b, y, z. Left Click: minus, nav_up, nav_down, nav_left, nav_right.
+# With use_left_side = false the defaults are: plus shift up, b shift down, z/a steer, y music.
+# When you change the option in Settings, the buttons switch to the other set by themselves, if you haven't changed them.
+[buttons]
+plus = "obc:shift_up"        # shift up
+minus = "obc:shift_down"     # shift down
+nav_left = "obc:steer_left"  # steer left (while held)
+nav_right = "obc:steer_right"  # steer right
+nav_up = "media:volup"       # volume up
+nav_down = "media:voldown"   # volume down
+y = "media:playpause"        # play/pause music
+z = "key:u"                  # MyWhoosh minimal interface
+a = "key:2"                  # MyWhoosh emote 2 (wave)
+b = "screenshot"             # Mac screenshot, saved on the Desktop
+
+# Long press (optional): the normal action fires on release.
+# Don't use it on shift buttons (they would get slower) or steering buttons.
+[long_press]
+y = "media:previous"         # previous track
+
+# Double click (optional): the single click on that button waits double_press_ms to see if a second one comes.
+# Same advice: not on shift and steering buttons.
+[double_press]
+y = "media:next"             # next track
