@@ -6,20 +6,21 @@ change is written to config.toml right away and applied to the running program.
 
 import json
 import logging
-import subprocess
-import tomllib
 from pathlib import Path
 from typing import Callable
 
-from PyObjCTools import AppHelper
-
-from actions import DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, REMOVED_ACTIONS, action_choices, describe, repeatable
+from actions import (DEFAULT_BUTTONS, DEFAULT_REPEAT_BUTTONS, HELD_ACTIONS, REMOVED_ACTIONS, action_choices,
+                     describe, open_in_editor, repeatable)
 from ble import BUTTON_LABELS, SIDE_BUTTONS, SIDE_LEFT, SIDE_RIGHT
+from config_io import load_raw_toml
 from i18n import _
 from webwindow import WebWindow
 
 log = logging.getLogger("click2whoosh")
 PAGE = "settings.html"
+# The sections of config.toml holding one entry per button; dump_config also writes "general".
+BUTTON_SECTIONS = ("buttons", "long_press", "double_press")
+CONFIG_SECTIONS = ("general", *BUTTON_SECTIONS)
 
 
 # ---------------------------------------------------------------- config.toml
@@ -37,7 +38,7 @@ def toml_value(value) -> str:
 def dump_config(raw: dict) -> str:
     lines = ["# Click2Whoosh configuration, written by the Settings window.",
              "# You can also edit it by hand: the possible actions are described in the README.", ""]
-    for section in ("general", "buttons", "long_press", "double_press"):
+    for section in CONFIG_SECTIONS:
         lines.append(f"[{section}]")
         for key, value in raw.get(section, {}).items():
             lines.append(f"{key} = {toml_value(value)}")
@@ -97,8 +98,7 @@ def switch_default_buttons(raw: dict, left: bool) -> bool:
 def update_default_buttons(path: Path) -> None:
     """At startup: a configuration never customized but with the other mode's buttons (e.g. created
     when the left Click was not on by default) switches to the right buttons. Others stay as they are."""
-    with path.open("rb") as f:
-        raw = tomllib.load(f)
+    raw = load_raw_toml(path)
     left = raw.get("general", {}).get("use_left_side", True)
     changed = replace_removed_actions(raw)
     if switch_default_buttons(raw, left):
@@ -111,7 +111,7 @@ def update_default_buttons(path: Path) -> None:
 def replace_removed_actions(raw: dict) -> bool:
     """Actions that no longer exist (the experimental fork ones) become the plain steering."""
     changed = False
-    for section in ("buttons", "long_press", "double_press"):
+    for section in BUTTON_SECTIONS:
         table = raw.get(section, {})
         for name, spec in table.items():
             if spec in REMOVED_ACTIONS:
@@ -178,12 +178,8 @@ class SettingsWindow(WebWindow):
             self.call("c2wStatus", self.get_status())
 
     def pressed(self, name: str, is_pressed: bool) -> None:
-        """Called from the Bluetooth thread: the window is only touched from the main thread."""
-        def show() -> None:
-            if self.visible:
-                args = ", ".join(json.dumps(a) for a in (name, is_pressed, self.focused))
-                self._eval(f"window.c2wPressed && window.c2wPressed({args})")
-        AppHelper.callAfter(show)
+        """Called from the Bluetooth thread: self.focused is read cross-thread like self.visible is."""
+        self.call("c2wPressed", name, is_pressed, self.focused)
 
     def state(self) -> dict:
         raw = self.read_raw()
@@ -208,12 +204,11 @@ class SettingsWindow(WebWindow):
     # ---- from the page to Python
 
     def read_raw(self) -> dict:
-        with self.config_path.open("rb") as f:
-            return tomllib.load(f)
+        return load_raw_toml(self.config_path)
 
     def on_message(self, kind: str, message: dict) -> None:
         if kind == "open_file":
-            subprocess.Popen(["open", "-t", str(self.config_path)])
+            open_in_editor(self.config_path)
         elif kind in ("button", "general"):
             raw = self.read_raw()
             if kind == "button":
